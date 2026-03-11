@@ -1,80 +1,83 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useBrazeContext, CAROUSEL_PLACEMENT_IDS } from '@/components/braze-provider'
+import { braze } from '@/lib/braze'
 
-interface BannerSlide {
-  id: string
-  title: string
-  description: string
-  ctaText?: string
-  backgroundColor: string
-}
-
-interface BannerCarouselProps {
-  slides: BannerSlide[]
-}
-
-export function BannerCarousel({ slides }: BannerCarouselProps) {
+export function BannerCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0)
+  const { banners } = useBrazeContext()
+  const slotRefs = useRef<(HTMLDivElement | null)[]>([])
+  const insertedSlots = useRef<Set<number>>(new Set())
 
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % slides.length)
-  }
+  // Insert or re-insert the banner for the current slide whenever the slide or banners change
+  useEffect(() => {
+    const placementId = CAROUSEL_PLACEMENT_IDS[currentSlide]
+    const banner = banners[placementId]
+    const container = slotRefs.current[currentSlide]
 
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)
-  }
+    if (banner && !banner.isControl && container) {
+      braze.insertBanner(banner, container)
+      insertedSlots.current.add(currentSlide)
+    }
+  }, [currentSlide, banners])
 
-  const goToSlide = (index: number) => {
-    setCurrentSlide(index)
-  }
+  const hasAnyBanner = CAROUSEL_PLACEMENT_IDS.some((id) => banners[id])
 
-  const handleCtaClick = (slideId: string) => {
-    console.log(`CTA clicked for ${slideId}`)
-    // In a real app, this would trigger the appropriate action
-  }
+  const nextSlide = () =>
+    setCurrentSlide((prev) => (prev + 1) % CAROUSEL_PLACEMENT_IDS.length)
+
+  const prevSlide = () =>
+    setCurrentSlide(
+      (prev) => (prev - 1 + CAROUSEL_PLACEMENT_IDS.length) % CAROUSEL_PLACEMENT_IDS.length
+    )
+
+  const goToSlide = (index: number) => setCurrentSlide(index)
 
   return (
     <div className="relative w-full overflow-hidden rounded-lg border border-border shadow-sm">
-      {/* Slides */}
       <div className="relative h-64 md:h-72">
-        {slides.map((slide, index) => (
-          <div
-            key={slide.id}
-            className={cn(
-              'absolute inset-0 transition-all duration-500 ease-in-out',
-              index === currentSlide
-                ? 'translate-x-0 opacity-100'
-                : index < currentSlide
-                  ? '-translate-x-full opacity-0'
-                  : 'translate-x-full opacity-0'
-            )}
-          >
+        {!hasAnyBanner && (
+          <div className="flex h-full items-center justify-center bg-muted/30">
+            <p className="text-muted-foreground">Loading banner content…</p>
+          </div>
+        )}
+
+        {CAROUSEL_PLACEMENT_IDS.map((placementId, index) => {
+          const banner = banners[placementId]
+          return (
             <div
-              className="flex h-full flex-col items-start justify-center px-8 md:px-12"
-              style={{ backgroundColor: slide.backgroundColor }}
+              key={placementId}
+              className={cn(
+                'absolute inset-0 transition-all duration-500 ease-in-out',
+                index === currentSlide
+                  ? 'translate-x-0 opacity-100'
+                  : index < currentSlide
+                    ? '-translate-x-full opacity-0'
+                    : 'translate-x-full opacity-0'
+              )}
             >
-              <h3 className="mb-3 text-2xl font-semibold text-foreground md:text-3xl">
-                {slide.title}
-              </h3>
-              <p className="mb-6 max-w-2xl text-base text-foreground/80 md:text-lg">
-                {slide.description}
-              </p>
-              {slide.ctaText && (
-                <Button
-                  onClick={() => handleCtaClick(slide.id)}
-                  size="lg"
-                  className="bg-foreground text-background hover:bg-foreground/90"
-                >
-                  {slide.ctaText}
-                </Button>
+              {banner === null || banner?.isControl ? (
+                // Null means no campaign targeting this slot — show a placeholder
+                <div className="flex h-full items-center justify-center bg-muted/30">
+                  <p className="text-sm text-muted-foreground">
+                    No banner configured for <code>{placementId}</code>
+                  </p>
+                </div>
+              ) : (
+                // Container for insertBanner — Braze renders an iframe here and auto-logs impressions
+                <div
+                  ref={(el) => {
+                    slotRefs.current[index] = el
+                  }}
+                  className="h-full w-full"
+                />
               )}
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Navigation Arrows */}
@@ -95,7 +98,7 @@ export function BannerCarousel({ slides }: BannerCarouselProps) {
 
       {/* Dot Indicators */}
       <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
-        {slides.map((_, index) => (
+        {CAROUSEL_PLACEMENT_IDS.map((_, index) => (
           <button
             key={index}
             onClick={() => goToSlide(index)}
