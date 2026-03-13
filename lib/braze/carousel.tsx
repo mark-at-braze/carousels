@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useBrazeContext, CAROUSEL_PLACEMENT_IDS } from '@/components/braze-provider'
-import { braze } from '@/lib/braze'
+import { useBrazeContext, CAROUSEL_PLACEMENT_IDS } from './provider'
+import { braze } from './init'
 
 export function BannerCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -12,7 +12,6 @@ export function BannerCarousel() {
   const slotRefs = useRef<(HTMLDivElement | null)[]>([])
   const insertedSlots = useRef<Set<number>>(new Set())
 
-  // Insert or re-insert the banner for the current slide whenever the slide or banners change
   useEffect(() => {
     const placementId = CAROUSEL_PLACEMENT_IDS[currentSlide]
     const banner = banners[placementId]
@@ -60,14 +59,12 @@ export function BannerCarousel() {
               )}
             >
               {banner === null || banner?.isControl ? (
-                // Null means no campaign targeting this slot — show a placeholder
                 <div className="flex h-full items-center justify-center bg-muted/30">
                   <p className="text-sm text-muted-foreground">
                     No banner configured for <code>{placementId}</code>
                   </p>
                 </div>
               ) : (
-                // Container for insertBanner — Braze renders an iframe here and auto-logs impressions
                 <div
                   ref={(el) => {
                     slotRefs.current[index] = el
@@ -80,7 +77,6 @@ export function BannerCarousel() {
         })}
       </div>
 
-      {/* Navigation Arrows */}
       <button
         onClick={prevSlide}
         className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-2 shadow-md backdrop-blur-sm transition-all hover:bg-background hover:shadow-lg"
@@ -96,7 +92,6 @@ export function BannerCarousel() {
         <ChevronRight className="h-5 w-5 text-foreground" />
       </button>
 
-      {/* Dot Indicators */}
       <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
         {CAROUSEL_PLACEMENT_IDS.map((_, index) => (
           <button

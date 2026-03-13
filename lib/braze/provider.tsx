@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { initBraze, braze } from "@/lib/braze";
+import { initBraze, braze } from "./init";
 import type { Banner } from "@braze/web-sdk";
 
 export const CAROUSEL_PLACEMENT_IDS = [

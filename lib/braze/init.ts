@@ -7,7 +7,7 @@ export function initBraze() {
   braze.initialize(process.env.NEXT_PUBLIC_BRAZE_API_KEY!, {
     baseUrl: process.env.NEXT_PUBLIC_BRAZE_SDK_ENDPOINT!,
     enableLogging: true,
-    allowUserSuppliedJavascript: true,
+    allowUserSuppliedJavascript: true, // required for Banner HTML
   });
   braze.openSession();
   initialized = true;

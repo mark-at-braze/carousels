@@ -1,6 +1,5 @@
-import { BannerCarousel } from '@/components/banner-carousel'
+import { BannerCarousel } from '@/lib/braze/carousel'
 import { CodeBlock } from '@/components/code-block'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 
 // ─── Code samples ────────────────────────────────────────────────────────────
 
@@ -137,44 +136,6 @@ if (banner) braze.logBannerClick(banner);
 // Optionally refresh banners on a timer:
 setInterval(() => braze.requestBannersRefresh(PLACEMENT_IDS), 60_000);`
 
-// ─── Cursor tab ──────────────────────────────────────────────────────────────
-
-const cursorPrompt1 = `I want to add a Braze Banner carousel to this Next.js app.
-The carousel should show 4 slides, each powered by a Braze Banner placement:
-carousel_slot_1, carousel_slot_2, carousel_slot_3, carousel_slot_4.
-
-Please install @braze/web-sdk and set up a lib/braze.ts file that:
-- Initializes the SDK with NEXT_PUBLIC_BRAZE_API_KEY and NEXT_PUBLIC_BRAZE_SDK_ENDPOINT
-- Guards against double-initialization
-- Sets allowUserSuppliedJavascript: true`
-
-const cursorPrompt2 = `Create a BrazeProvider component in components/braze-provider.tsx that:
-- Is a "use client" React context provider
-- Calls initBraze() on mount
-- Subscribes to braze.subscribeToBannersUpdates() for the 4 carousel placement IDs
-- Calls braze.requestBannersRefresh() to fetch the latest banners
-- Exposes the banners (Record<string, Banner | null>) via React context
-- Cleans up the subscription on unmount
-
-Then wrap the root layout's children with <BrazeProvider>.`
-
-const cursorPrompt3 = `Create a BannerCarousel component in components/banner-carousel.tsx that:
-- Reads banner data from BrazeContext using a useBrazeContext() hook
-- Tracks the current slide index with useState
-- For the active slide, calls braze.insertBanner(banner, containerEl) inside a useEffect
-  so the banner HTML renders in an iframe and impressions are logged automatically
-- Shows a loading placeholder while banners are fetching
-- Shows a "no banner configured" placeholder for null/control banners
-- Has previous/next arrow buttons and dot indicator navigation`
-
-const cursorPrompt4 = `Add this to the .env.local file:
-NEXT_PUBLIC_BRAZE_API_KEY=<your key>
-NEXT_PUBLIC_BRAZE_SDK_ENDPOINT=<your endpoint>
-
-Then render <BannerCarousel /> on the main page and start the dev server.
-Confirm the carousel is fetching from Braze by checking the browser console
-(enableLogging: true will show SDK activity).`
-
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function Page() {
@@ -183,22 +144,39 @@ export default function Page() {
       {/* Navigation */}
       <nav className="border-b border-border bg-white">
         <div className="mx-auto flex h-16 max-w-[800px] items-center justify-between px-6">
-          <div className="flex items-center gap-2.5">
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <rect width="32" height="32" rx="6" fill="#3608D7"/>
-              <path d="M16 7v18M9.5 10.5l13 11M9.5 21.5l13-11" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-            </svg>
-            <span className="text-xl font-extrabold tracking-tight text-foreground">braze</span>
-            <span className="ml-1 rounded-full bg-accent px-2.5 py-0.5 text-xs font-semibold text-primary">Banner Carousel</span>
-          </div>
-          <a
-            href="https://www.braze.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Get Started
+          <a href="https://www.braze.com" target="_blank" rel="noopener noreferrer">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/braze-logo.png" alt="Braze" className="h-7 w-auto" />
           </a>
+          <div className="flex items-center gap-6">
+            <a
+              href="https://www.braze.com/docs/user_guide/message_building_by_channel/banners"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              User Docs
+            </a>
+            <a
+              href="https://www.braze.com/docs/developer_guide/banners"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Developer Guide
+            </a>
+            <a
+              href="https://github.com/braze-inc/banners-carousel-demo"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <svg viewBox="0 0 16 16" className="h-4 w-4 fill-current" aria-hidden="true">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+              </svg>
+              GitHub
+            </a>
+          </div>
         </div>
       </nav>
 
@@ -207,12 +185,17 @@ export default function Page() {
         {/* ── Live Demo ──────────────────────────────────────────────────── */}
         <section className="mb-16">
           <h1 className="mb-2 text-4xl font-extrabold tracking-tight text-foreground">
-            Braze Banner Carousel
+            Braze Banners Carousel Demo
           </h1>
           <p className="mb-8 text-lg text-muted-foreground">
-            Four Braze Banner placements rendered live in a custom React carousel.
+            How to build a web carousel using Banners and multiple placements
           </p>
           <BannerCarousel />
+          <div className="mt-6 rounded-xl border border-accent bg-accent/20 px-5 py-4">
+            <p className="text-sm leading-relaxed text-foreground/80">
+              <strong>About this demo:</strong> Braze Banners are individual content placements — each one targets a single slot on your page. This sample project shows how you can combine <strong>multiple Banner placements</strong> together to build a full carousel experience. Each slide maps to its own placement ID, giving marketers independent control over every slide&apos;s content, targeting, and scheduling — all without a code deploy.
+            </p>
+          </div>
         </section>
 
         {/* ── How It Works ───────────────────────────────────────────────── */}
@@ -236,8 +219,8 @@ export default function Page() {
                   body: 'Four Braze Banner placements — carousel_slot_1 through carousel_slot_4 — each map to one carousel slide. Marketers author the full banner HTML in the Braze dashboard; the SDK delivers it verbatim.',
                 },
                 {
-                  label: 'No carousel library',
-                  body: 'The carousel is a custom React component. CSS transform: translateX transitions drive slide animations. useState tracks the active index. No Splide, Swiper, or Embla dependency.',
+                  label: 'React or a library — your choice',
+                  body: 'The carousel UI is decoupled from Braze. You can build it directly in React using useState and CSS transitions (as this demo does), or drop in any library — Embla, Swiper, Splide, etc. Braze just fills the slide containers.',
                 },
                 {
                   label: 'Context provider',
@@ -291,130 +274,64 @@ export default function Page() {
           </div>
         </section>
 
-        {/* ── Tabbed guide ───────────────────────────────────────────────── */}
+        {/* ── Step-by-step guide ─────────────────────────────────────────── */}
         <section>
           <h2 className="mb-1 text-2xl font-extrabold tracking-tight text-foreground">
             Add it to your project
           </h2>
-          <p className="mb-6 text-muted-foreground">
-            Two ways to get started — manually or with an AI coding assistant.
+          <p className="mb-8 text-muted-foreground">
+            Step-by-step guide to integrating Braze Banners into your own app.
           </p>
 
-          <Tabs defaultValue="manual">
-            <TabsList className="mb-6 h-10 w-full rounded-full bg-muted p-1 sm:w-auto">
-              <TabsTrigger value="manual" className="rounded-full px-5 text-sm font-semibold">
-                Step by step
-              </TabsTrigger>
-              <TabsTrigger value="cursor" className="rounded-full px-5 text-sm font-semibold">
-                Build with Cursor
-              </TabsTrigger>
-            </TabsList>
+          <div className="flex flex-col gap-10">
 
-            {/* ── Tab 1: Manual ── */}
-            <TabsContent value="manual">
-              <div className="flex flex-col gap-10">
+            <Step n={1} title="Create Banner placements in Braze">
+              <p>
+                In the Braze dashboard, go to <strong>Settings → Banner Placements</strong> and
+                create one placement per carousel slot. Give each a unique ID — these are the
+                strings your SDK will use to fetch content.
+              </p>
+              <CodeBlock code={s1Code} language="bash" />
+            </Step>
 
-                <Step n={1} title="Create Banner placements in Braze">
-                  <p>
-                    In the Braze dashboard, go to <strong>Settings → Banner Placements</strong> and
-                    create one placement per carousel slot. Give each a unique ID — these are the
-                    strings your SDK will use to fetch content.
-                  </p>
-                  <CodeBlock code={s1Code} language="bash" />
-                </Step>
+            <Step n={2} title="Install the SDK and set env vars">
+              <p>
+                Install <code className="rounded bg-muted px-1.5 py-0.5 text-sm">@braze/web-sdk</code> and
+                add your API key and SDK endpoint to <code className="rounded bg-muted px-1.5 py-0.5 text-sm">.env.local</code>.
+                Never commit these to source control — add <code className="rounded bg-muted px-1.5 py-0.5 text-sm">.env.local</code> to <code className="rounded bg-muted px-1.5 py-0.5 text-sm">.gitignore</code>.
+              </p>
+              <CodeBlock code={s2Code} language="bash" />
+            </Step>
 
-                <Step n={2} title="Install the SDK and set env vars">
-                  <p>
-                    Install <code className="rounded bg-muted px-1.5 py-0.5 text-sm">@braze/web-sdk</code> and
-                    add your API key and SDK endpoint to <code className="rounded bg-muted px-1.5 py-0.5 text-sm">.env.local</code>.
-                    Never commit these to source control — add <code className="rounded bg-muted px-1.5 py-0.5 text-sm">.env.local</code> to <code className="rounded bg-muted px-1.5 py-0.5 text-sm">.gitignore</code>.
-                  </p>
-                  <CodeBlock code={s2Code} language="bash" />
-                </Step>
+            <Step n={3} title="Add BrazeProvider to your root layout">
+              <p>
+                The provider initializes the SDK on the client, subscribes to banner updates, and
+                exposes banner data to the entire component tree via React context. Wrap your{' '}
+                <code className="rounded bg-muted px-1.5 py-0.5 text-sm">RootLayout</code> children with it.
+              </p>
+              <CodeBlock code={s3Code} language="typescript" />
+            </Step>
 
-                <Step n={3} title="Add BrazeProvider to your root layout">
-                  <p>
-                    The provider initializes the SDK on the client, subscribes to banner updates, and
-                    exposes banner data to the entire component tree via React context. Wrap your{' '}
-                    <code className="rounded bg-muted px-1.5 py-0.5 text-sm">RootLayout</code> children with it.
-                  </p>
-                  <CodeBlock code={s3Code} language="typescript" />
-                </Step>
+            <Step n={4} title="Render the carousel">
+              <p>
+                Drop <code className="rounded bg-muted px-1.5 py-0.5 text-sm">&lt;BannerCarousel /&gt;</code> anywhere on the page.
+                It reads from context automatically — no props needed. Each slide calls{' '}
+                <code className="rounded bg-muted px-1.5 py-0.5 text-sm">insertBanner()</code> when it
+                becomes active, which renders the HTML and logs the impression.
+              </p>
+              <CodeBlock code={s4Code} language="typescript" />
+            </Step>
 
-                <Step n={4} title="Render the carousel">
-                  <p>
-                    Drop <code className="rounded bg-muted px-1.5 py-0.5 text-sm">&lt;BannerCarousel /&gt;</code> anywhere on the page.
-                    It reads from context automatically — no props needed. Each slide calls{' '}
-                    <code className="rounded bg-muted px-1.5 py-0.5 text-sm">insertBanner()</code> when it
-                    becomes active, which renders the HTML and logs the impression.
-                  </p>
-                  <CodeBlock code={s4Code} language="typescript" />
-                </Step>
+            <Step n={5} title="Impressions, clicks, and refresh">
+              <p>
+                Impression tracking is automatic via <code className="rounded bg-muted px-1.5 py-0.5 text-sm">insertBanner()</code>.
+                For clicks on CTAs outside the iframe, use <code className="rounded bg-muted px-1.5 py-0.5 text-sm">logBannerClick()</code>.
+                Optionally poll for fresh content on a timer.
+              </p>
+              <CodeBlock code={s5Code} language="typescript" />
+            </Step>
 
-                <Step n={5} title="Impressions, clicks, and refresh">
-                  <p>
-                    Impression tracking is automatic via <code className="rounded bg-muted px-1.5 py-0.5 text-sm">insertBanner()</code>.
-                    For clicks on CTAs outside the iframe, use <code className="rounded bg-muted px-1.5 py-0.5 text-sm">logBannerClick()</code>.
-                    Optionally poll for fresh content on a timer.
-                  </p>
-                  <CodeBlock code={s5Code} language="typescript" />
-                </Step>
-
-              </div>
-            </TabsContent>
-
-            {/* ── Tab 2: Cursor ── */}
-            <TabsContent value="cursor">
-              <div className="mb-6 rounded-xl border border-accent bg-accent/30 px-5 py-4">
-                <p className="text-sm leading-relaxed text-foreground/90">
-                  <strong>Cursor</strong> is an AI-powered code editor that can write, refactor, and
-                  wire up integrations from natural-language descriptions. The prompts below guide
-                  it through building the full Braze Banners carousel from scratch. Paste each into
-                  Cursor&apos;s chat (Agent mode) in order.
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-10">
-
-                <CursorStep n={1} title="Describe the integration">
-                  <p>
-                    Open your project in Cursor and start a new Agent chat. Give it the big picture
-                    so it understands the shape of the feature before touching any files.
-                  </p>
-                  <PromptBlock prompt={cursorPrompt1} />
-                </CursorStep>
-
-                <CursorStep n={2} title="Generate the provider">
-                  <p>
-                    Ask Cursor to scaffold the context provider. It will create the file, write the
-                    subscription logic, and handle cleanup automatically.
-                  </p>
-                  <PromptBlock prompt={cursorPrompt2} />
-                </CursorStep>
-
-                <CursorStep n={3} title="Build the carousel component">
-                  <p>
-                    Prompt Cursor to create the carousel. Be explicit about{' '}
-                    <code className="rounded bg-muted px-1.5 py-0.5 text-sm">insertBanner()</code> so it
-                    uses the SDK&apos;s built-in iframe rendering rather than{' '}
-                    <code className="rounded bg-muted px-1.5 py-0.5 text-sm">dangerouslySetInnerHTML</code>.
-                  </p>
-                  <PromptBlock prompt={cursorPrompt3} />
-                </CursorStep>
-
-                <CursorStep n={4} title="Wire it up and verify">
-                  <p>
-                    Give Cursor your credentials and ask it to finish the integration. With{' '}
-                    <code className="rounded bg-muted px-1.5 py-0.5 text-sm">enableLogging: true</code>, the
-                    Braze SDK logs all network activity to the browser console — you can confirm
-                    banners are being fetched without needing campaigns live.
-                  </p>
-                  <PromptBlock prompt={cursorPrompt4} />
-                </CursorStep>
-
-              </div>
-            </TabsContent>
-          </Tabs>
+          </div>
         </section>
       </main>
     </div>
@@ -442,33 +359,3 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
   )
 }
 
-function CursorStep({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
-  return (
-    <div className="flex gap-4">
-      <div className="flex flex-col items-center">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-primary bg-background text-sm font-bold text-primary">
-          {n}
-        </div>
-        <div className="mt-2 w-px grow bg-border" />
-      </div>
-      <div className="pb-2 min-w-0 flex-1">
-        <h3 className="mb-3 text-lg font-bold text-foreground">{title}</h3>
-        <div className="flex flex-col gap-3 text-sm leading-relaxed text-foreground/90">
-          {children}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function PromptBlock({ prompt }: { prompt: string }) {
-  return (
-    <div className="rounded-xl border border-border bg-foreground/[0.03] p-4">
-      <div className="mb-2 flex items-center gap-2">
-        <div className="h-2 w-2 rounded-full bg-primary" />
-        <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Cursor prompt</span>
-      </div>
-      <pre className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{prompt}</pre>
-    </div>
-  )
-}

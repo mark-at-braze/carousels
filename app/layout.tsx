@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
-import BrazeProvider from '@/components/braze-provider'
+import BrazeProvider from '@/lib/braze/provider'
 import './globals.css'
 
 const inter = Inter({
