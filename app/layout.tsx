@@ -8,29 +8,12 @@ const inter = Inter({
   subsets: ['latin'],
   variable: '--font-sans',
   display: 'swap',
-});
+})
 
 export const metadata: Metadata = {
-  title: 'Braze Banner Carousel Documentation',
-  description: 'Learn how to build a banner carousel with Braze - step-by-step developer guide with live demo',
-  generator: 'v0.app',
-  icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
-  },
+  title: 'Braze Banners Carousel Demo',
+  description:
+    'Reference implementation: build a web carousel using Braze Banners with multiple placements. Live demo and step-by-step integration guide.',
 }
 
 export default function RootLayout({
@@ -46,7 +29,6 @@ export default function RootLayout({
         </BrazeProvider>
         <Analytics />
       </body>
-  </html>
-)
+    </html>
+  )
 }
-;

@@ -3,39 +3,24 @@ import { CodeBlock } from '@/components/code-block'
 
 // ─── Code samples ────────────────────────────────────────────────────────────
 
-const initCode = `// lib/braze.ts
-import * as braze from "@braze/web-sdk";
-
-let initialized = false;
-
-export function initBraze() {
-  if (initialized || typeof window === "undefined") return;
-  braze.initialize(process.env.NEXT_PUBLIC_BRAZE_API_KEY!, {
-    baseUrl: process.env.NEXT_PUBLIC_BRAZE_SDK_ENDPOINT!,
-    enableLogging: true,
-    allowUserSuppliedJavascript: true, // required for Banner HTML
-  });
-  braze.openSession();
-  initialized = true;
-}
-
-export { braze };`
-
-const providerCode = `// components/braze-provider.tsx
+const providerCode = `// lib/braze/provider.tsx
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { initBraze, braze } from "@/lib/braze";
+import { initBraze, braze } from "./init";
 import type { Banner } from "@braze/web-sdk";
 
-const PLACEMENT_IDS = [
+export const CAROUSEL_PLACEMENT_IDS = [
   "carousel_slot_1",
   "carousel_slot_2",
   "carousel_slot_3",
   "carousel_slot_4",
 ];
 
-const BrazeContext = createContext<Record<string, Banner | null>>({});
+const BrazeContext = createContext<{ banners: Record<string, Banner | null> }>({
+  banners: {},
+});
+
 export const useBrazeContext = () => useContext(BrazeContext);
 
 export default function BrazeProvider({ children }: { children: React.ReactNode }) {
@@ -43,27 +28,33 @@ export default function BrazeProvider({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     initBraze();
-    const id = braze.subscribeToBannersUpdates(b => setBanners({ ...b }));
-    braze.requestBannersRefresh(PLACEMENT_IDS);
-    return () => { if (id) braze.removeSubscription(id); };
+    const sub = braze.subscribeToBannersUpdates((updated) => {
+      setBanners({ ...updated });
+    });
+    braze.requestBannersRefresh(CAROUSEL_PLACEMENT_IDS);
+    return () => { if (sub) braze.removeSubscription(sub); };
   }, []);
 
-  return <BrazeContext.Provider value={banners}>{children}</BrazeContext.Provider>;
+  return (
+    <BrazeContext.Provider value={{ banners }}>
+      {children}
+    </BrazeContext.Provider>
+  );
 }`
 
-const carouselCode = `// components/banner-carousel.tsx
+const carouselCode = `// lib/braze/carousel.tsx
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useBrazeContext, CAROUSEL_PLACEMENT_IDS } from "./braze-provider";
-import { braze } from "@/lib/braze";
+import { useBrazeContext, CAROUSEL_PLACEMENT_IDS } from "./provider";
+import { braze } from "./init";
 
 export function BannerCarousel() {
   const [current, setCurrent] = useState(0);
-  const banners = useBrazeContext();
+  const { banners } = useBrazeContext();
   const slotRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  // insertBanner() renders the HTML into an iframe and auto-logs an impression
+  // insertBanner() renders HTML into an iframe and auto-logs an impression
   useEffect(() => {
     const banner = banners[CAROUSEL_PLACEMENT_IDS[current]];
     const el = slotRefs.current[current];
@@ -75,8 +66,8 @@ export function BannerCarousel() {
   return (
     <div className="relative overflow-hidden rounded-lg">
       {CAROUSEL_PLACEMENT_IDS.map((id, i) => (
-        <div key={id} className={i === current ? "visible" : "hidden"}>
-          <div ref={el => { slotRefs.current[i] = el }} className="h-64 w-full" />
+        <div key={id} className={i === current ? "block" : "hidden"}>
+          <div ref={(el) => { slotRefs.current[i] = el; }} className="h-64 w-full" />
         </div>
       ))}
       {/* navigation arrows + dot indicators */}
@@ -84,9 +75,9 @@ export function BannerCarousel() {
   );
 }`
 
-// ─── Step-by-step tab ────────────────────────────────────────────────────────
+// ─── Step-by-step code samples ───────────────────────────────────────────────
 
-const s1Code = `# In the Braze dashboard → Settings → Banner Placements
+const step1Code = `# In the Braze dashboard → Settings → Banner Placements
 # Create one placement per carousel slot:
 
 carousel_slot_1
@@ -94,20 +85,18 @@ carousel_slot_2
 carousel_slot_3
 carousel_slot_4
 
-# Design each banner's full HTML content in the Braze composer.
-# The SDK delivers the HTML verbatim; insertBanner() renders it in an iframe.`
+# Each placement maps to one carousel slide.
+# Marketers design the HTML in the Braze composer —
+# the SDK delivers it verbatim.`
 
-const s2Code = `npm install @braze/web-sdk
+const step2Code = `npm install @braze/web-sdk
 
-# .env.local
+# .env.local (never commit this)
 NEXT_PUBLIC_BRAZE_API_KEY=your-api-key
 NEXT_PUBLIC_BRAZE_SDK_ENDPOINT=your-sdk-endpoint.braze.com`
 
-const s3Code = `// Wrap your root layout with the provider so all components
-// can access live banner data via context.
-
-// app/layout.tsx
-import BrazeProvider from "@/components/braze-provider";
+const step3Code = `// app/layout.tsx
+import BrazeProvider from "@/lib/braze/provider";
 
 export default function RootLayout({ children }) {
   return (
@@ -119,57 +108,48 @@ export default function RootLayout({ children }) {
   );
 }`
 
-const s4Code = `// Render the carousel wherever you need it.
-// It reads banner data automatically from BrazeContext.
-
-import { BannerCarousel } from "@/components/banner-carousel";
+const step4Code = `// app/page.tsx
+import { BannerCarousel } from "@/lib/braze/carousel";
 
 export default function Page() {
   return <BannerCarousel />;
 }`
 
-const s5Code = `// insertBanner() handles impression logging automatically.
-// For clicks on CTAs rendered outside the iframe, call:
+const step5Code = `// Impressions are tracked automatically by insertBanner().
+// For clicks on external CTAs, call logBannerClick():
 const banner = braze.getBanner("carousel_slot_1");
 if (banner) braze.logBannerClick(banner);
 
-// Optionally refresh banners on a timer:
-setInterval(() => braze.requestBannersRefresh(PLACEMENT_IDS), 60_000);`
+// Optionally refresh content on a timer:
+setInterval(() => {
+  braze.requestBannersRefresh(PLACEMENT_IDS);
+}, 60_000);`
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function Page() {
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="border-b border-border bg-white">
-        <div className="mx-auto flex h-16 max-w-[800px] items-center justify-between px-6">
+      {/* ── Nav ──────────────────────────────────────────────────────────── */}
+      <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#1a0066]/95 backdrop-blur-md">
+        <div className="mx-auto flex h-14 max-w-[960px] items-center justify-between px-6">
           <a href="https://www.braze.com" target="_blank" rel="noopener noreferrer">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/braze-logo.png" alt="Braze" className="h-7 w-auto" />
+            <img src="/braze-logo.png" alt="Braze" className="h-6 w-auto brightness-0 invert" />
           </a>
-          <div className="flex items-center gap-6">
-            <a
-              href="https://www.braze.com/docs/user_guide/message_building_by_channel/banners"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              User Docs
-            </a>
+          <div className="flex items-center gap-5">
             <a
               href="https://www.braze.com/docs/developer_guide/banners"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="text-sm font-medium text-white/70 transition-colors hover:text-white"
             >
-              Developer Guide
+              Docs
             </a>
             <a
               href="https://github.com/braze-inc/banners-carousel-demo"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="flex items-center gap-1.5 text-sm font-medium text-white/70 transition-colors hover:text-white"
             >
               <svg viewBox="0 0 16 16" className="h-4 w-4 fill-current" aria-hidden="true">
                 <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
@@ -180,84 +160,111 @@ export default function Page() {
         </div>
       </nav>
 
-      <main className="mx-auto max-w-[800px] px-6 py-12">
-
-        {/* ── Live Demo ──────────────────────────────────────────────────── */}
-        <section className="mb-16">
-          <h1 className="mb-2 text-4xl font-extrabold tracking-tight text-foreground">
-            Braze Banners Carousel Demo
-          </h1>
-          <p className="mb-8 text-lg text-muted-foreground">
-            How to build a web carousel using Banners and multiple placements
-          </p>
-          <BannerCarousel />
-          <div className="mt-6 rounded-xl border border-accent bg-accent/20 px-5 py-4">
-            <p className="text-sm leading-relaxed text-foreground/80">
-              <strong>About this demo:</strong> Braze Banners are individual content placements — each one targets a single slot on your page. This sample project shows how you can combine <strong>multiple Banner placements</strong> together to build a full carousel experience. Each slide maps to its own placement ID, giving marketers independent control over every slide&apos;s content, targeting, and scheduling — all without a code deploy.
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <section className="hero-gradient px-6 pb-16 pt-16 text-white">
+        <div className="relative z-10 mx-auto max-w-[960px]">
+          <div className="mb-10">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-white/90 backdrop-blur-sm">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              Reference Implementation
+            </div>
+            <h1 className="mb-4 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
+              Build a carousel with<br />Braze Banners
+            </h1>
+            <p className="max-w-[540px] text-lg leading-relaxed text-white/75">
+              A working demo and integration guide showing how to combine multiple
+              Banner placements into a carousel. Each slide is an independent
+              placement — marketers control the content, targeting, and scheduling
+              without a code deploy.
             </p>
+          </div>
+
+          {/* Live carousel demo */}
+          <div className="overflow-hidden rounded-xl border border-white/15 bg-black/20 p-3 shadow-2xl backdrop-blur-sm">
+            <BannerCarousel />
+          </div>
+        </div>
+      </section>
+
+      <main className="mx-auto max-w-[960px] px-6">
+
+        {/* ── Architecture ───────────────────────────────────────────────── */}
+        <section className="py-16">
+          <p className="mb-1 text-sm font-bold uppercase tracking-widest text-primary">
+            Architecture
+          </p>
+          <h2 className="mb-3 text-2xl font-extrabold tracking-tight text-foreground">
+            How it works
+          </h2>
+          <p className="mb-8 max-w-[600px] text-muted-foreground">
+            Four Banner placements feed four carousel slides. The SDK delivers
+            each placement&apos;s HTML, and React renders it — no carousel content
+            lives in your codebase.
+          </p>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {[
+              {
+                icon: '⬡',
+                label: 'One placement per slide',
+                body: 'Each carousel slot maps to a Banner placement ID (carousel_slot_1 through carousel_slot_4). Marketers author the full HTML per slide in the Braze composer.',
+              },
+              {
+                icon: '⚛',
+                label: 'Framework-agnostic pattern',
+                body: 'The carousel UI is decoupled from Braze. Build it in React with useState and CSS transitions (as this demo does), or drop in Embla, Swiper, Splide — Braze just fills the containers.',
+              },
+              {
+                icon: '◈',
+                label: 'Context provider',
+                body: 'BrazeProvider wraps the app and exposes a Record<string, Banner | null> via React context. It initializes the SDK, subscribes to banner updates, and requests a refresh on mount.',
+              },
+              {
+                icon: '▣',
+                label: 'Iframe rendering + auto-tracking',
+                body: 'braze.insertBanner(banner, el) renders each banner in an isolated iframe. Impressions are logged automatically when the iframe loads — no extra tracking code required.',
+              },
+            ].map(({ icon, label, body }) => (
+              <div key={label} className="rounded-lg border border-border bg-card p-5 transition-colors hover:border-primary/20 hover:bg-accent/30">
+                <span className="mb-2 block text-lg text-primary">{icon}</span>
+                <p className="mb-1 text-sm font-bold text-foreground">{label}</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
+              </div>
+            ))}
           </div>
         </section>
 
-        {/* ── How It Works ───────────────────────────────────────────────── */}
-        <section className="mb-16">
-          <h2 className="mb-1 text-2xl font-extrabold tracking-tight text-foreground">
-            How it works
+        <hr className="border-border" />
+
+        {/* ── SDK lifecycle ───────────────────────────────────────────────── */}
+        <section className="py-16">
+          <p className="mb-1 text-sm font-bold uppercase tracking-widest text-primary">
+            SDK Integration
+          </p>
+          <h2 className="mb-3 text-2xl font-extrabold tracking-tight text-foreground">
+            Lifecycle
           </h2>
-          <p className="mb-8 text-muted-foreground">
-            A technical overview of the architecture and SDK integration.
+          <p className="mb-8 max-w-[600px] text-muted-foreground">
+            Six SDK calls power the entire flow — from initialization to cleanup.
           </p>
 
-          {/* Architecture overview */}
-          <div className="mb-8 rounded-xl border border-border bg-muted/40 p-6">
-            <h3 className="mb-4 text-base font-bold uppercase tracking-widest text-primary">
-              Architecture
-            </h3>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {[
-                {
-                  label: 'Data source',
-                  body: 'Four Braze Banner placements — carousel_slot_1 through carousel_slot_4 — each map to one carousel slide. Marketers author the full banner HTML in the Braze dashboard; the SDK delivers it verbatim.',
-                },
-                {
-                  label: 'React or a library — your choice',
-                  body: 'The carousel UI is decoupled from Braze. You can build it directly in React using useState and CSS transitions (as this demo does), or drop in any library — Embla, Swiper, Splide, etc. Braze just fills the slide containers.',
-                },
-                {
-                  label: 'Context provider',
-                  body: 'BrazeProvider wraps the app and exposes a Record<string, Banner | null> via React context. It initializes the SDK, subscribes to updates, and requests a refresh — all on mount.',
-                },
-                {
-                  label: 'iframe rendering',
-                  body: 'braze.insertBanner(banner, el) injects each banner into an isolated iframe. Impressions are logged automatically once the iframe loads. No extra tracking code needed.',
-                },
-              ].map(({ label, body }) => (
-                <div key={label} className="rounded-lg border border-border bg-background p-4">
-                  <p className="mb-1 text-sm font-semibold text-foreground">{label}</p>
-                  <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* SDK lifecycle */}
-          <h3 className="mb-3 text-base font-bold text-foreground">SDK lifecycle</h3>
-          <div className="mb-8 flex flex-col gap-0">
+          <div className="flex flex-col gap-0">
             {[
-              { fn: 'braze.initialize(apiKey, { baseUrl })', note: 'Initializes the SDK. Call once on the client — guard with a flag to prevent double-init in React strict mode.' },
-              { fn: 'braze.openSession()', note: 'Starts a user session. Required before Banners can be targeted and delivered.' },
-              { fn: 'braze.subscribeToBannersUpdates(callback)', note: 'Registers a callback that fires immediately with any cached data, then again when fresh banners arrive. Returns a subscription ID for cleanup.' },
-              { fn: 'braze.requestBannersRefresh(placementIds)', note: 'Triggers a network fetch for the specified placement IDs. When the response arrives, the subscriber callback fires with the updated map.' },
-              { fn: 'braze.insertBanner(banner, containerEl)', note: 'Renders the banner HTML into an iframe inside containerEl and auto-logs an impression once the iframe loads.' },
-              { fn: 'braze.removeSubscription(id)', note: 'Unsubscribes the callback on component unmount to prevent memory leaks.' },
+              { fn: 'braze.initialize(apiKey, opts)', note: 'Initialize the SDK once on the client. Guard with a flag to prevent double-init in React strict mode.' },
+              { fn: 'braze.openSession()', note: 'Start a user session. Required before Banners can be targeted and delivered.' },
+              { fn: 'braze.subscribeToBannersUpdates(cb)', note: 'Register a callback that fires immediately with cached data, then again when fresh banners arrive. Returns a subscription ID.' },
+              { fn: 'braze.requestBannersRefresh(ids)', note: 'Trigger a network fetch for the given placement IDs. When the response arrives, the subscriber callback fires with the updated map.' },
+              { fn: 'braze.insertBanner(banner, el)', note: 'Render the banner HTML into an iframe inside the container element. Impression tracking is automatic.' },
+              { fn: 'braze.removeSubscription(id)', note: 'Unsubscribe the callback on component unmount to prevent memory leaks.' },
             ].map(({ fn, note }, i, arr) => (
               <div key={fn} className="flex gap-3">
                 <div className="flex flex-col items-center">
                   <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                     {i + 1}
                   </div>
-                  {i < arr.length - 1 && <div className="mt-1 w-px grow bg-border" />}
+                  {i < arr.length - 1 && <div className="step-connector mt-1 grow" />}
                 </div>
-                <div className="pb-5">
+                <div className="pb-6">
                   <code className="text-sm font-semibold text-primary">{fn}</code>
                   <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">{note}</p>
                 </div>
@@ -265,80 +272,104 @@ export default function Page() {
             ))}
           </div>
 
-          {/* Code: full implementation */}
-          <h3 className="mb-3 text-base font-bold text-foreground">Full implementation</h3>
-          <div className="flex flex-col gap-4">
-            <CodeBlock code={initCode} language="typescript" />
+          {/* Source code reference */}
+          <div className="mt-4 space-y-4">
+            <h3 className="text-base font-bold text-foreground">Source: Provider &amp; Carousel</h3>
             <CodeBlock code={providerCode} language="typescript" />
             <CodeBlock code={carouselCode} language="typescript" />
           </div>
         </section>
 
-        {/* ── Step-by-step guide ─────────────────────────────────────────── */}
-        <section>
-          <h2 className="mb-1 text-2xl font-extrabold tracking-tight text-foreground">
+        <hr className="border-border" />
+
+        {/* ── Integration guide ───────────────────────────────────────────── */}
+        <section className="py-16">
+          <p className="mb-1 text-sm font-bold uppercase tracking-widest text-primary">
+            Step-by-step
+          </p>
+          <h2 className="mb-3 text-2xl font-extrabold tracking-tight text-foreground">
             Add it to your project
           </h2>
-          <p className="mb-8 text-muted-foreground">
-            Step-by-step guide to integrating Braze Banners into your own app.
+          <p className="mb-10 max-w-[600px] text-muted-foreground">
+            Five steps from zero to a working Braze-powered carousel.
           </p>
 
           <div className="flex flex-col gap-10">
-
             <Step n={1} title="Create Banner placements in Braze">
               <p>
-                In the Braze dashboard, go to <strong>Settings → Banner Placements</strong> and
-                create one placement per carousel slot. Give each a unique ID — these are the
-                strings your SDK will use to fetch content.
+                In the Braze dashboard, navigate to <strong>Settings → Banner Placements</strong> and
+                create one placement per carousel slot. Each placement ID maps to one slide —
+                marketers design the HTML content in the Braze composer.
               </p>
-              <CodeBlock code={s1Code} language="bash" />
+              <CodeBlock code={step1Code} language="bash" />
             </Step>
 
-            <Step n={2} title="Install the SDK and set env vars">
+            <Step n={2} title="Install the SDK">
               <p>
-                Install <code className="rounded bg-muted px-1.5 py-0.5 text-sm">@braze/web-sdk</code> and
-                add your API key and SDK endpoint to <code className="rounded bg-muted px-1.5 py-0.5 text-sm">.env.local</code>.
-                Never commit these to source control — add <code className="rounded bg-muted px-1.5 py-0.5 text-sm">.env.local</code> to <code className="rounded bg-muted px-1.5 py-0.5 text-sm">.gitignore</code>.
+                Add <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-medium">@braze/web-sdk</code> and
+                configure your API key and SDK endpoint
+                in <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-medium">.env.local</code>.
               </p>
-              <CodeBlock code={s2Code} language="bash" />
+              <CodeBlock code={step2Code} language="bash" />
             </Step>
 
-            <Step n={3} title="Add BrazeProvider to your root layout">
+            <Step n={3} title="Wrap your app with BrazeProvider">
               <p>
-                The provider initializes the SDK on the client, subscribes to banner updates, and
-                exposes banner data to the entire component tree via React context. Wrap your{' '}
-                <code className="rounded bg-muted px-1.5 py-0.5 text-sm">RootLayout</code> children with it.
+                The provider initializes the SDK, subscribes to banner updates, and
+                exposes banner data to the entire component tree via React context.
               </p>
-              <CodeBlock code={s3Code} language="typescript" />
+              <CodeBlock code={step3Code} language="typescript" />
             </Step>
 
             <Step n={4} title="Render the carousel">
               <p>
-                Drop <code className="rounded bg-muted px-1.5 py-0.5 text-sm">&lt;BannerCarousel /&gt;</code> anywhere on the page.
-                It reads from context automatically — no props needed. Each slide calls{' '}
-                <code className="rounded bg-muted px-1.5 py-0.5 text-sm">insertBanner()</code> when it
-                becomes active, which renders the HTML and logs the impression.
+                Drop <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-medium">&lt;BannerCarousel /&gt;</code> anywhere
+                on the page. It reads from context automatically — no props needed. Each slide
+                calls <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-medium">insertBanner()</code> when
+                it becomes active.
               </p>
-              <CodeBlock code={s4Code} language="typescript" />
+              <CodeBlock code={step4Code} language="typescript" />
             </Step>
 
-            <Step n={5} title="Impressions, clicks, and refresh">
+            <Step n={5} title="Analytics and refresh">
               <p>
-                Impression tracking is automatic via <code className="rounded bg-muted px-1.5 py-0.5 text-sm">insertBanner()</code>.
-                For clicks on CTAs outside the iframe, use <code className="rounded bg-muted px-1.5 py-0.5 text-sm">logBannerClick()</code>.
-                Optionally poll for fresh content on a timer.
+                Impression tracking is automatic
+                via <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-medium">insertBanner()</code>.
+                For clicks on CTAs rendered outside the iframe,
+                use <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-medium">logBannerClick()</code>.
+                Optionally poll for fresh content.
               </p>
-              <CodeBlock code={s5Code} language="typescript" />
+              <CodeBlock code={step5Code} language="typescript" />
             </Step>
-
           </div>
         </section>
       </main>
+
+      {/* ── Footer ──────────────────────────────────────────────────────── */}
+      <footer className="border-t border-border bg-muted/50 px-6 py-10">
+        <div className="mx-auto flex max-w-[960px] flex-col items-center gap-4 sm:flex-row sm:justify-between">
+          <div className="flex items-center gap-3">
+            <img src="/braze-logo.png" alt="Braze" className="h-5 w-auto" />
+            <span className="text-sm text-muted-foreground">Banners Carousel Demo</span>
+          </div>
+          <div className="flex gap-6 text-sm text-muted-foreground">
+            <a href="https://www.braze.com/docs/developer_guide/banners" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-foreground">
+              Banners Docs
+            </a>
+            <a href="https://www.braze.com/docs/developer_guide/banners/placements" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-foreground">
+              Placements Guide
+            </a>
+            <a href="https://github.com/braze-inc/banners-carousel-demo" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-foreground">
+              Source on GitHub
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
 
-// ─── Shared sub-components ───────────────────────────────────────────────────
+// ─── Step sub-component ──────────────────────────────────────────────────────
 
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
@@ -347,9 +378,9 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
           {n}
         </div>
-        <div className="mt-2 w-px grow bg-border" />
+        <div className="step-connector mt-2 grow" />
       </div>
-      <div className="pb-2 min-w-0 flex-1">
+      <div className="min-w-0 flex-1 pb-2">
         <h3 className="mb-3 text-lg font-bold text-foreground">{title}</h3>
         <div className="flex flex-col gap-3 text-sm leading-relaxed text-foreground/90">
           {children}
@@ -358,4 +389,3 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
     </div>
   )
 }
-
