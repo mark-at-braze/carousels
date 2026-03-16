@@ -3,80 +3,6 @@ import { CodeBlock } from '@/components/code-block'
 
 // ─── Code samples ────────────────────────────────────────────────────────────
 
-const providerCode = `// lib/braze/provider.tsx
-"use client";
-
-import { createContext, useContext, useEffect, useState } from "react";
-import { initBraze, braze } from "./init";
-import type { Banner } from "@braze/web-sdk";
-
-export const CAROUSEL_PLACEMENT_IDS = [
-  "carousel_slot_1",
-  "carousel_slot_2",
-  "carousel_slot_3",
-  "carousel_slot_4",
-];
-
-const BrazeContext = createContext<{ banners: Record<string, Banner | null> }>({
-  banners: {},
-});
-
-export const useBrazeContext = () => useContext(BrazeContext);
-
-export default function BrazeProvider({ children }: { children: React.ReactNode }) {
-  const [banners, setBanners] = useState<Record<string, Banner | null>>({});
-
-  useEffect(() => {
-    initBraze();
-    const sub = braze.subscribeToBannersUpdates((updated) => {
-      setBanners({ ...updated });
-    });
-    braze.requestBannersRefresh(CAROUSEL_PLACEMENT_IDS);
-    return () => { if (sub) braze.removeSubscription(sub); };
-  }, []);
-
-  return (
-    <BrazeContext.Provider value={{ banners }}>
-      {children}
-    </BrazeContext.Provider>
-  );
-}`
-
-const carouselCode = `// lib/braze/carousel.tsx
-"use client";
-
-import { useState, useEffect, useRef } from "react";
-import { useBrazeContext, CAROUSEL_PLACEMENT_IDS } from "./provider";
-import { braze } from "./init";
-
-export function BannerCarousel() {
-  const [current, setCurrent] = useState(0);
-  const { banners } = useBrazeContext();
-  const slotRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  // insertBanner() renders HTML into an iframe and auto-logs an impression
-  useEffect(() => {
-    const banner = banners[CAROUSEL_PLACEMENT_IDS[current]];
-    const el = slotRefs.current[current];
-    if (banner && !banner.isControl && el) {
-      braze.insertBanner(banner, el);
-    }
-  }, [current, banners]);
-
-  return (
-    <div className="relative overflow-hidden rounded-lg">
-      {CAROUSEL_PLACEMENT_IDS.map((id, i) => (
-        <div key={id} className={i === current ? "block" : "hidden"}>
-          <div ref={(el) => { slotRefs.current[i] = el; }} className="h-64 w-full" />
-        </div>
-      ))}
-      {/* navigation arrows + dot indicators */}
-    </div>
-  );
-}`
-
-// ─── Step-by-step code samples ───────────────────────────────────────────────
-
 const step1Code = `# In the Braze dashboard → Settings → Banner Placements
 # Create one placement per carousel slot:
 
@@ -204,8 +130,8 @@ export default function Page() {
                 body: 'The carousel UI is decoupled from Braze. Build it in React with useState and CSS transitions (as this demo does), or drop in Embla, Swiper, Splide — Braze just fills the containers.',
               },
               {
-                label: 'Context provider',
-                body: 'BrazeProvider wraps the app and exposes a Record<string, Banner | null> via React context. It initializes the SDK, subscribes to banner updates, and requests a refresh on mount.',
+                label: 'Marketers populate each slide',
+                body: 'To fill a carousel slot, a marketer creates a Banners campaign in Braze and assigns it to one of the placement IDs. They control the content, targeting, and scheduling — no code deploy required.',
               },
               {
                 label: 'Iframe rendering + auto-tracking',
@@ -217,48 +143,6 @@ export default function Page() {
                 <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
               </div>
             ))}
-          </div>
-        </section>
-
-        <hr className="border-border" />
-
-        {/* ── SDK lifecycle ───────────────────────────────────────────────── */}
-        <section className="py-14">
-          <p className="mb-1 text-xs font-bold uppercase tracking-widest text-primary">SDK Integration</p>
-          <h2 className="mb-2 text-2xl font-bold tracking-tight text-foreground">Lifecycle</h2>
-          <p className="mb-8 max-w-[600px] text-muted-foreground">
-            Six SDK calls power the entire flow — from initialization to cleanup.
-          </p>
-
-          <div className="flex flex-col gap-0">
-            {[
-              { fn: 'braze.initialize(apiKey, opts)', note: 'Initialize the SDK once on the client. Guard with a flag to prevent double-init in React strict mode.' },
-              { fn: 'braze.openSession()', note: 'Start a user session. Required before Banners can be targeted and delivered.' },
-              { fn: 'braze.subscribeToBannersUpdates(cb)', note: 'Register a callback that fires immediately with cached data, then again when fresh banners arrive. Returns a subscription ID.' },
-              { fn: 'braze.requestBannersRefresh(ids)', note: 'Trigger a network fetch for the given placement IDs. When the response arrives, the subscriber callback fires with the updated map.' },
-              { fn: 'braze.insertBanner(banner, el)', note: 'Render the banner HTML into an iframe inside the container element. Impression tracking is automatic.' },
-              { fn: 'braze.removeSubscription(id)', note: 'Unsubscribe the callback on component unmount to prevent memory leaks.' },
-            ].map(({ fn, note }, i, arr) => (
-              <div key={fn} className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                    {i + 1}
-                  </div>
-                  {i < arr.length - 1 && <div className="step-connector mt-1 grow" />}
-                </div>
-                <div className="pb-5">
-                  <code className="text-sm font-semibold text-primary">{fn}</code>
-                  <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">{note}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Source code reference */}
-          <div className="mt-4 space-y-4">
-            <h3 className="text-base font-bold text-foreground">Source: Provider &amp; Carousel</h3>
-            <CodeBlock code={providerCode} language="typescript" />
-            <CodeBlock code={carouselCode} language="typescript" />
           </div>
         </section>
 
