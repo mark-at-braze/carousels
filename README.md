@@ -21,20 +21,23 @@ braze.removeSubscription(id)                 ← Cleanup on unmount
 
 ```
 app/
-├── layout.tsx              Root layout — wraps children with BrazeProvider
+├── layout.tsx              Root layout — wraps children with BrazeProvider and Vercel Analytics
 ├── page.tsx                Main page: live demo, architecture, integration guide
-└── globals.css             Braze brand design tokens
+└── globals.css             Braze brand design tokens (CSS custom properties)
 
 lib/
-├── utils.ts                Tailwind merge utility
+├── utils.ts                Tailwind merge utility (clsx + tailwind-merge)
 └── braze/
     ├── index.ts            Barrel exports
     ├── init.ts             SDK initialization (guarded against double-init)
-    ├── provider.tsx        React context provider — init, subscribe, refresh
+    ├── provider.tsx        React context provider — init, subscribe, refresh, cleanup
     └── carousel.tsx        Carousel component — reads context, calls insertBanner()
 
 components/
 └── code-block.tsx          Syntax-highlighted code display
+
+public/
+└── braze-logo.png          Braze logo asset
 ```
 
 ## Getting started
@@ -88,23 +91,29 @@ Open [http://localhost:3000](http://localhost:3000). The carousel will show a lo
 
 ### `lib/braze/init.ts`
 
-Initializes the Braze SDK once with `allowUserSuppliedJavascript: true` (required for Banner HTML to render). Guarded against double-init in React strict mode.
+Initializes the Braze SDK once with `allowUserSuppliedJavascript: true` (required for Banner HTML to render) and `enableLogging: true` for console debug output. A module-level `initialized` flag guards against double-init in React Strict Mode.
 
 ### `lib/braze/provider.tsx`
 
-Client component that initializes the SDK on mount, subscribes to `subscribeToBannersUpdates` for the four placement IDs, calls `requestBannersRefresh`, exposes the banner map via React context, and cleans up the subscription on unmount.
+Client component that initializes the SDK on mount, subscribes to `subscribeToBannersUpdates` for the four placement IDs, calls `requestBannersRefresh`, exposes the banner map via React context (`BrazeContext`), and cleans up the subscription on unmount. Also exports `CAROUSEL_PLACEMENT_IDS` and the `useBrazeContext` hook.
 
 ### `lib/braze/carousel.tsx`
 
-Reads banner data from `BrazeContext`. For the active slide, calls `braze.insertBanner(banner, containerEl)` inside a `useEffect` — this renders the banner HTML into an iframe and automatically logs an impression. Null and control banners render a placeholder.
+Reads banner data from `BrazeContext`. For the active slide, calls `braze.insertBanner(banner, containerEl)` inside a `useEffect` — this renders the banner HTML into an iframe and automatically logs an impression. Null and control banners render a placeholder. The carousel height is controlled by the `BANNER_HEIGHT_PX` constant (default `256`) — set this to match the pixel height of banners you create in Braze.
+
+### `app/layout.tsx`
+
+Root layout using the Inter font. Wraps the app with `BrazeProvider` and includes [Vercel Analytics](https://vercel.com/analytics).
 
 ## Tech stack
 
-- [Next.js](https://nextjs.org) 16 (App Router)
-- [React](https://react.dev) 19
+- [Next.js](https://nextjs.org) 16.1.6 (App Router)
+- [React](https://react.dev) 19.2.4
 - [@braze/web-sdk](https://www.npmjs.com/package/@braze/web-sdk) 6.5
 - [Tailwind CSS](https://tailwindcss.com) 4
-- [TypeScript](https://www.typescriptlang.org) 5.7
+- [TypeScript](https://www.typescriptlang.org) 5.7.3
+- [lucide-react](https://lucide.dev) — chevron icons for carousel navigation
+- [@vercel/analytics](https://vercel.com/analytics) — page view analytics
 
 ## License
 
