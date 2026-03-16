@@ -6,6 +6,9 @@ import { cn } from '@/lib/utils'
 import { useBrazeContext, CAROUSEL_PLACEMENT_IDS } from './provider'
 import { braze } from './init'
 
+// Must match the height of the banners created in Braze (e.g. 768×256 → 256px)
+const BANNER_HEIGHT_PX = 256
+
 export function BannerCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const { banners } = useBrazeContext()
@@ -37,7 +40,7 @@ export function BannerCarousel() {
 
   return (
     <div className="relative w-full overflow-hidden rounded-lg border border-border shadow-sm">
-      <div className="relative h-64 md:h-72">
+      <div className="relative" style={{ height: BANNER_HEIGHT_PX }}>
         {!hasAnyBanner && (
           <div className="flex h-full items-center justify-center bg-muted/30">
             <p className="text-muted-foreground">Loading banner content…</p>
@@ -66,10 +69,9 @@ export function BannerCarousel() {
                 </div>
               ) : (
                 <div
-                  ref={(el) => {
-                    slotRefs.current[index] = el
-                  }}
-                  className="h-full w-full"
+                  ref={(el) => { slotRefs.current[index] = el }}
+                  className="banner-slot"
+                  style={{ width: '100%', height: BANNER_HEIGHT_PX }}
                 />
               )}
             </div>

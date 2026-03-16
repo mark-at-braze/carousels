@@ -73,22 +73,20 @@
   }
 }
 
-/* ─── Hero gradient — Braze brazing-process palette ───────────────────────── */
+/* ─── Hero ─────────────────────────────────────────────────────────────────── */
 
-.hero-gradient {
-  background: linear-gradient(160deg, #1a0066 0%, #3608D7 35%, #6B3FA0 60%, #8B3A6E 80%, #C74E5A 100%);
-  position: relative;
-  overflow: hidden;
+.hero-section {
+  background: oklch(0.98 0.006 274);
+  border-bottom: 1px solid oklch(0.92 0.005 274);
 }
 
-.hero-gradient::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 80% 60% at 20% 80%, rgba(247, 124, 51, 0.15) 0%, transparent 70%),
-    radial-gradient(ellipse 60% 50% at 80% 20%, rgba(107, 63, 160, 0.2) 0%, transparent 70%);
-  pointer-events: none;
+/* ─── Braze banner iframes ────────────────────────────────────────────────── */
+
+.banner-slot iframe {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
 }
 
 /* ─── Code blocks ─────────────────────────────────────────────────────────── */

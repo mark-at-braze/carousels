@@ -131,17 +131,17 @@ export default function Page() {
   return (
     <div className="min-h-screen bg-background">
       {/* ── Nav ──────────────────────────────────────────────────────────── */}
-      <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#1a0066]/95 backdrop-blur-md">
+      <nav className="sticky top-0 z-50 border-b border-border bg-white">
         <div className="mx-auto flex h-14 max-w-[960px] items-center justify-between px-6">
           <a href="https://www.braze.com" target="_blank" rel="noopener noreferrer">
-            <img src="/braze-logo.png" alt="Braze" className="h-6 w-auto brightness-0 invert" />
+            <img src="/braze-logo.png" alt="Braze" className="h-6 w-auto" />
           </a>
           <div className="flex items-center gap-5">
             <a
               href="https://www.braze.com/docs/developer_guide/banners"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm font-medium text-white/70 transition-colors hover:text-white"
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               Docs
             </a>
@@ -149,7 +149,7 @@ export default function Page() {
               href="https://github.com/braze-inc/banners-carousel-demo"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-sm font-medium text-white/70 transition-colors hover:text-white"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               <svg viewBox="0 0 16 16" className="h-4 w-4 fill-current" aria-hidden="true">
                 <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
@@ -161,26 +161,21 @@ export default function Page() {
       </nav>
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <section className="hero-gradient px-6 pb-16 pt-16 text-white">
-        <div className="relative z-10 mx-auto max-w-[960px]">
-          <div className="mb-10">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-white/90 backdrop-blur-sm">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              Reference Implementation
-            </div>
-            <h1 className="mb-4 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
-              Build a carousel with<br />Braze Banners
-            </h1>
-            <p className="max-w-[540px] text-lg leading-relaxed text-white/75">
-              A working demo and integration guide showing how to combine multiple
-              Banner placements into a carousel. Each slide is an independent
-              placement — marketers control the content, targeting, and scheduling
-              without a code deploy.
-            </p>
-          </div>
+      <section className="hero-section px-6 py-14">
+        <div className="mx-auto max-w-[960px]">
+          <p className="mb-3 text-sm font-semibold text-primary">Reference Implementation</p>
+          <h1 className="mb-4 text-4xl font-extrabold leading-tight tracking-tight text-foreground sm:text-5xl">
+            Build a carousel with<br />Braze Banners
+          </h1>
+          <p className="mb-10 max-w-[540px] text-lg leading-relaxed text-muted-foreground">
+            A working demo and integration guide showing how to combine multiple
+            Banner placements into a carousel. Each slide is an independent
+            placement — marketers control the content, targeting, and scheduling
+            without a code deploy.
+          </p>
 
           {/* Live carousel demo */}
-          <div className="overflow-hidden rounded-xl border border-white/15 bg-black/20 p-3 shadow-2xl backdrop-blur-sm">
+          <div className="overflow-hidden rounded-xl border border-border bg-white p-3 shadow-sm">
             <BannerCarousel />
           </div>
         </div>
@@ -189,45 +184,36 @@ export default function Page() {
       <main className="mx-auto max-w-[960px] px-6">
 
         {/* ── Architecture ───────────────────────────────────────────────── */}
-        <section className="py-16">
-          <p className="mb-1 text-sm font-bold uppercase tracking-widest text-primary">
-            Architecture
-          </p>
-          <h2 className="mb-3 text-2xl font-extrabold tracking-tight text-foreground">
-            How it works
-          </h2>
+        <section className="py-14">
+          <p className="mb-1 text-xs font-bold uppercase tracking-widest text-primary">Architecture</p>
+          <h2 className="mb-2 text-2xl font-bold tracking-tight text-foreground">How it works</h2>
           <p className="mb-8 max-w-[600px] text-muted-foreground">
             Four Banner placements feed four carousel slides. The SDK delivers
             each placement&apos;s HTML, and React renders it — no carousel content
             lives in your codebase.
           </p>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             {[
               {
-                icon: '⬡',
                 label: 'One placement per slide',
                 body: 'Each carousel slot maps to a Banner placement ID (carousel_slot_1 through carousel_slot_4). Marketers author the full HTML per slide in the Braze composer.',
               },
               {
-                icon: '⚛',
                 label: 'Framework-agnostic pattern',
                 body: 'The carousel UI is decoupled from Braze. Build it in React with useState and CSS transitions (as this demo does), or drop in Embla, Swiper, Splide — Braze just fills the containers.',
               },
               {
-                icon: '◈',
                 label: 'Context provider',
                 body: 'BrazeProvider wraps the app and exposes a Record<string, Banner | null> via React context. It initializes the SDK, subscribes to banner updates, and requests a refresh on mount.',
               },
               {
-                icon: '▣',
                 label: 'Iframe rendering + auto-tracking',
                 body: 'braze.insertBanner(banner, el) renders each banner in an isolated iframe. Impressions are logged automatically when the iframe loads — no extra tracking code required.',
               },
-            ].map(({ icon, label, body }) => (
-              <div key={label} className="rounded-lg border border-border bg-card p-5 transition-colors hover:border-primary/20 hover:bg-accent/30">
-                <span className="mb-2 block text-lg text-primary">{icon}</span>
-                <p className="mb-1 text-sm font-bold text-foreground">{label}</p>
+            ].map(({ label, body }) => (
+              <div key={label} className="rounded-lg border border-border bg-card p-5">
+                <p className="mb-1.5 font-semibold text-foreground">{label}</p>
                 <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
               </div>
             ))}
@@ -237,13 +223,9 @@ export default function Page() {
         <hr className="border-border" />
 
         {/* ── SDK lifecycle ───────────────────────────────────────────────── */}
-        <section className="py-16">
-          <p className="mb-1 text-sm font-bold uppercase tracking-widest text-primary">
-            SDK Integration
-          </p>
-          <h2 className="mb-3 text-2xl font-extrabold tracking-tight text-foreground">
-            Lifecycle
-          </h2>
+        <section className="py-14">
+          <p className="mb-1 text-xs font-bold uppercase tracking-widest text-primary">SDK Integration</p>
+          <h2 className="mb-2 text-2xl font-bold tracking-tight text-foreground">Lifecycle</h2>
           <p className="mb-8 max-w-[600px] text-muted-foreground">
             Six SDK calls power the entire flow — from initialization to cleanup.
           </p>
@@ -259,12 +241,12 @@ export default function Page() {
             ].map(({ fn, note }, i, arr) => (
               <div key={fn} className="flex gap-3">
                 <div className="flex flex-col items-center">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                     {i + 1}
                   </div>
                   {i < arr.length - 1 && <div className="step-connector mt-1 grow" />}
                 </div>
-                <div className="pb-6">
+                <div className="pb-5">
                   <code className="text-sm font-semibold text-primary">{fn}</code>
                   <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">{note}</p>
                 </div>
@@ -283,13 +265,9 @@ export default function Page() {
         <hr className="border-border" />
 
         {/* ── Integration guide ───────────────────────────────────────────── */}
-        <section className="py-16">
-          <p className="mb-1 text-sm font-bold uppercase tracking-widest text-primary">
-            Step-by-step
-          </p>
-          <h2 className="mb-3 text-2xl font-extrabold tracking-tight text-foreground">
-            Add it to your project
-          </h2>
+        <section className="py-14">
+          <p className="mb-1 text-xs font-bold uppercase tracking-widest text-primary">Step-by-step</p>
+          <h2 className="mb-2 text-2xl font-bold tracking-tight text-foreground">Add it to your project</h2>
           <p className="mb-10 max-w-[600px] text-muted-foreground">
             Five steps from zero to a working Braze-powered carousel.
           </p>
@@ -346,13 +324,13 @@ export default function Page() {
       </main>
 
       {/* ── Footer ──────────────────────────────────────────────────────── */}
-      <footer className="border-t border-border bg-muted/50 px-6 py-10">
-        <div className="mx-auto flex max-w-[960px] flex-col items-center gap-4 sm:flex-row sm:justify-between">
-          <div className="flex items-center gap-3">
+      <footer className="border-t border-border px-6 py-8">
+        <div className="mx-auto flex max-w-[960px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
             <img src="/braze-logo.png" alt="Braze" className="h-5 w-auto" />
             <span className="text-sm text-muted-foreground">Banners Carousel Demo</span>
           </div>
-          <div className="flex gap-6 text-sm text-muted-foreground">
+          <div className="flex gap-5 text-sm text-muted-foreground">
             <a href="https://www.braze.com/docs/developer_guide/banners" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-foreground">
               Banners Docs
             </a>
@@ -375,14 +353,14 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
   return (
     <div className="flex gap-4">
       <div className="flex flex-col items-center">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
           {n}
         </div>
-        <div className="step-connector mt-2 grow" />
+        <div className="step-connector mt-1 grow" />
       </div>
       <div className="min-w-0 flex-1 pb-2">
-        <h3 className="mb-3 text-lg font-bold text-foreground">{title}</h3>
-        <div className="flex flex-col gap-3 text-sm leading-relaxed text-foreground/90">
+        <h3 className="mb-2 font-semibold text-foreground">{title}</h3>
+        <div className="flex flex-col gap-3 text-sm leading-relaxed text-muted-foreground">
           {children}
         </div>
       </div>
