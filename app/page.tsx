@@ -21,35 +21,50 @@ const step2Code = `npm install @braze/web-sdk
 NEXT_PUBLIC_BRAZE_API_KEY=your-api-key
 NEXT_PUBLIC_BRAZE_SDK_ENDPOINT=your-sdk-endpoint.braze.com`
 
-const step3Code = `// app/layout.tsx
-import BrazeProvider from "@/lib/braze/provider";
+const step3Code = `// lib/braze/carousel.tsx
+"use client";
 
-export default function RootLayout({ children }) {
+import { useState, useEffect, useRef } from "react";
+import { useBrazeContext, CAROUSEL_PLACEMENT_IDS } from "./provider";
+import { braze } from "./init";
+
+export function BannerCarousel() {
+  const [current, setCurrent] = useState(0);
+  const { banners } = useBrazeContext();
+  const slotRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // insertBanner() renders HTML into an iframe and auto-logs an impression
+  useEffect(() => {
+    const banner = banners[CAROUSEL_PLACEMENT_IDS[current]];
+    const el = slotRefs.current[current];
+    if (banner && !banner.isControl && el) {
+      braze.insertBanner(banner, el);
+    }
+  }, [current, banners]);
+
   return (
-    <html>
-      <body>
-        <BrazeProvider>{children}</BrazeProvider>
-      </body>
-    </html>
+    <div className="relative overflow-hidden rounded-lg">
+      {CAROUSEL_PLACEMENT_IDS.map((id, i) => (
+        <div key={id} className={i === current ? "block" : "hidden"}>
+          <div ref={(el) => { slotRefs.current[i] = el; }} className="h-64 w-full" />
+        </div>
+      ))}
+      {/* navigation arrows + dot indicators */}
+    </div>
   );
 }`
 
-const step4Code = `// app/page.tsx
+const step3RenderCode = `// app/page.tsx
 import { BannerCarousel } from "@/lib/braze/carousel";
 
 export default function Page() {
   return <BannerCarousel />;
 }`
 
-const step5Code = `// Impressions are tracked automatically by insertBanner().
-// For clicks on external CTAs, call logBannerClick():
-const banner = braze.getBanner("carousel_slot_1");
-if (banner) braze.logBannerClick(banner);
-
-// Optionally refresh content on a timer:
-setInterval(() => {
-  braze.requestBannersRefresh(PLACEMENT_IDS);
-}, 60_000);`
+const step4Code = `// Refresh banners on page navigation so content stays current.
+// In a Next.js App Router project, call this in your layout or
+// in a useEffect that watches the pathname:
+braze.requestBannersRefresh(CAROUSEL_PLACEMENT_IDS);`
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
@@ -91,13 +106,11 @@ export default function Page() {
         <div className="mx-auto max-w-[960px]">
           <p className="mb-3 text-sm font-semibold text-primary">Reference Implementation</p>
           <h1 className="mb-4 text-4xl font-extrabold leading-tight tracking-tight text-foreground sm:text-5xl">
-            Build a carousel with<br />Braze Banners
+            Build a carousel with Braze Banners
           </h1>
-          <p className="mb-10 max-w-[540px] text-lg leading-relaxed text-muted-foreground">
+          <p className="mb-10 text-lg leading-relaxed text-muted-foreground">
             A working demo and integration guide showing how to combine multiple
-            Banner placements into a carousel. Each slide is an independent
-            placement — marketers control the content, targeting, and scheduling
-            without a code deploy.
+            Banner placements into a carousel.
           </p>
 
           {/* Live carousel demo */}
@@ -153,7 +166,7 @@ export default function Page() {
           <p className="mb-1 text-xs font-bold uppercase tracking-widest text-primary">Step-by-step</p>
           <h2 className="mb-2 text-2xl font-bold tracking-tight text-foreground">Add it to your project</h2>
           <p className="mb-10 max-w-[600px] text-muted-foreground">
-            Five steps from zero to a working Braze-powered carousel.
+            Four steps from zero to a working Braze-powered carousel.
           </p>
 
           <div className="flex flex-col gap-10">
@@ -175,33 +188,32 @@ export default function Page() {
               <CodeBlock code={step2Code} language="bash" />
             </Step>
 
-            <Step n={3} title="Wrap your app with BrazeProvider">
+            <Step n={3} title="Build the carousel">
               <p>
-                The provider initializes the SDK, subscribes to banner updates, and
-                exposes banner data to the entire component tree via React context.
+                The repo includes a <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-medium">BrazeProvider</code> that
+                initializes the SDK and exposes banner data via React context — wrap your app
+                with it in <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-medium">layout.tsx</code>.
+                Then build the carousel component. For the active slide,
+                it calls <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-medium">insertBanner()</code> to
+                render the HTML into an iframe. Inactive slides stay hidden until navigated to.
               </p>
               <CodeBlock code={step3Code} language="typescript" />
-            </Step>
-
-            <Step n={4} title="Render the carousel">
               <p>
                 Drop <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-medium">&lt;BannerCarousel /&gt;</code> anywhere
-                on the page. It reads from context automatically — no props needed. Each slide
-                calls <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-medium">insertBanner()</code> when
-                it becomes active.
+                on the page — it reads from context automatically, no props needed.
               </p>
-              <CodeBlock code={step4Code} language="typescript" />
+              <CodeBlock code={step3RenderCode} language="typescript" />
             </Step>
 
-            <Step n={5} title="Analytics and refresh">
+            <Step n={4} title="Analytics and refresh">
               <p>
-                Impression tracking is automatic
-                via <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-medium">insertBanner()</code>.
-                For clicks on CTAs rendered outside the iframe,
-                use <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-medium">logBannerClick()</code>.
-                Optionally poll for fresh content.
+                Impression and click tracking is handled automatically
+                by <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-medium">insertBanner()</code> —
+                no extra tracking code required. To keep carousel content fresh,
+                call <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-medium">requestBannersRefresh()</code> on
+                page navigation.
               </p>
-              <CodeBlock code={step5Code} language="typescript" />
+              <CodeBlock code={step4Code} language="typescript" />
             </Step>
           </div>
         </section>
