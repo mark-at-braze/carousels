@@ -20,7 +20,7 @@ export function BannerCarousel() {
     const banner = banners[placementId]
     const container = slotRefs.current[currentSlide]
 
-    if (banner && !banner.isControl && container) {
+    if (banner && !banner.isControl && container && !insertedSlots.current.has(currentSlide)) {
       braze.insertBanner(banner, container)
       insertedSlots.current.add(currentSlide)
     }
