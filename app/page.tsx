@@ -1,70 +1,106 @@
 import { BannerCarousel } from '@/lib/braze/carousel'
 import { CodeBlock } from '@/components/code-block'
+import { StepTabs } from '@/components/step-tabs'
 
 // ─── Code samples ────────────────────────────────────────────────────────────
 
-const step1Code = `# In the Braze dashboard → Settings → Banner Placements
-# Create one placement per carousel slot:
+const step1Code = `import * as braze from "@braze/web-sdk";
 
-carousel_slot_1
-carousel_slot_2
-carousel_slot_3
-carousel_slot_4
+braze.initialize("YOUR-API-KEY", {
+  baseUrl: "YOUR-ENDPOINT",
+  enableLogging: true,               // optional — remove in production
+  allowUserSuppliedJavascript: true, // required for Banner HTML
+});
 
-# Each placement maps to one carousel slide.
-# Marketers design the HTML in the Braze composer —
-# the SDK delivers it verbatim.`
+braze.openSession();`
 
-const step2Code = `npm install @braze/web-sdk
+const step2Code = `braze.subscribeToBannersUpdates((banners) => {
+  // \`banners\` maps each placement ID to its Banner object (or null).
+  // This callback fires whenever Banner content is updated.
+  updateYourUI(banners);
+});`
 
-# .env.local (never commit this)
-NEXT_PUBLIC_BRAZE_API_KEY=your-api-key
-NEXT_PUBLIC_BRAZE_SDK_ENDPOINT=your-sdk-endpoint.braze.com`
+const step3Code = `const banner = banners["carousel_slot_1"];
+const container = document.getElementById("carousel-slot-1");
 
-const step3Code = `// lib/braze/carousel.tsx
-"use client";
-
-import { useState, useEffect, useRef } from "react";
-import { useBrazeContext, CAROUSEL_PLACEMENT_IDS } from "./provider";
-import { braze } from "./init";
-
-export function BannerCarousel() {
-  const [current, setCurrent] = useState(0);
-  const { banners } = useBrazeContext();
-  const slotRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  // insertBanner() renders HTML into an iframe and auto-logs an impression
-  useEffect(() => {
-    const banner = banners[CAROUSEL_PLACEMENT_IDS[current]];
-    const el = slotRefs.current[current];
-    if (banner && !banner.isControl && el) {
-      braze.insertBanner(banner, el);
-    }
-  }, [current, banners]);
-
-  return (
-    <div className="relative overflow-hidden rounded-lg">
-      {CAROUSEL_PLACEMENT_IDS.map((id, i) => (
-        <div key={id} className={i === current ? "block" : "hidden"}>
-          <div ref={(el) => { slotRefs.current[i] = el; }} className="h-64 w-full" />
-        </div>
-      ))}
-      {/* navigation arrows + dot indicators */}
-    </div>
-  );
+if (banner && !banner.isControl && container) {
+  // Renders the Banner HTML into an iframe and auto-logs an impression.
+  braze.insertBanner(banner, container);
+} else if (banner?.isControl) {
+  // Hide the container for control-group users.
+  container.style.display = "none";
 }`
 
-const step3RenderCode = `// app/page.tsx
-import { BannerCarousel } from "@/lib/braze/carousel";
+const step4Code = `braze.requestBannersRefresh([
+  "carousel_slot_1",
+  "carousel_slot_2",
+  "carousel_slot_3",
+  "carousel_slot_4",
+]);`
+
+const step7Code = `import { BannerCarousel } from "./BannerCarousel";
 
 export default function Page() {
   return <BannerCarousel />;
 }`
 
-const step4Code = `// Refresh banners on page navigation so content stays current.
-// In a Next.js App Router project, call this in your layout or
-// in a useEffect that watches the pathname:
-braze.requestBannersRefresh(CAROUSEL_PLACEMENT_IDS);`
+const step5Code = `<!-- One <div> per carousel slot -->
+<div id="carousel-slot-1" style="width: 100%; height: 256px;"></div>
+<div id="carousel-slot-2" style="width: 100%; height: 256px;"></div>
+<div id="carousel-slot-3" style="width: 100%; height: 256px;"></div>
+<div id="carousel-slot-4" style="width: 100%; height: 256px;"></div>`
+
+const step6Code = `"use client";
+
+import { useState, useEffect, useRef } from "react";
+import * as braze from "@braze/web-sdk";
+
+const PLACEMENT_IDS = [
+  "carousel_slot_1",
+  "carousel_slot_2",
+  "carousel_slot_3",
+  "carousel_slot_4",
+];
+
+export function BannerCarousel() {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [banners, setBanners] = useState({});
+  const slotRefs = useRef([]);
+
+  useEffect(() => {
+    braze.subscribeToBannersUpdates((updated) => setBanners({ ...updated }));
+    braze.requestBannersRefresh(PLACEMENT_IDS);
+  }, []);
+
+  // Call insertBanner() whenever the active slide or banner data changes.
+  useEffect(() => {
+    const banner = banners[PLACEMENT_IDS[currentSlide]];
+    const container = slotRefs.current[currentSlide];
+    if (banner && !banner.isControl && container) {
+      braze.insertBanner(banner, container);
+    }
+  }, [currentSlide, banners]);
+
+  const prev = () =>
+    setCurrentSlide((s) => (s - 1 + PLACEMENT_IDS.length) % PLACEMENT_IDS.length);
+  const next = () =>
+    setCurrentSlide((s) => (s + 1) % PLACEMENT_IDS.length);
+
+  return (
+    <div style={{ position: "relative", width: "100%", height: 256 }}>
+      {PLACEMENT_IDS.map((id, i) => (
+        <div
+          key={id}
+          ref={(el) => { slotRefs.current[i] = el; }}
+          style={{ display: i === currentSlide ? "block" : "none", height: "100%" }}
+        />
+      ))}
+
+      <button onClick={prev}>← Prev</button>
+      <button onClick={next}>Next →</button>
+    </div>
+  );
+}`
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
@@ -133,24 +169,12 @@ export default function Page() {
           </p>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            {[
-              {
-                label: 'One placement per slide',
-                body: 'Each carousel slot maps to a Banner placement ID (carousel_slot_1 through carousel_slot_4). Marketers author the full HTML per slide in the Braze composer.',
-              },
-              {
-                label: 'Framework-agnostic pattern',
-                body: 'The carousel UI is decoupled from Braze. Build it in React with useState and CSS transitions (as this demo does), or drop in Embla, Swiper, Splide — Braze just fills the containers.',
-              },
-              {
-                label: 'Marketers populate each slide',
-                body: 'To fill a carousel slot, a marketer creates a Banners campaign in Braze and assigns it to one of the placement IDs. They control the content, targeting, and scheduling — no code deploy required.',
-              },
-              {
-                label: 'Iframe rendering + auto-tracking',
-                body: 'braze.insertBanner(banner, el) renders each banner in an isolated iframe. Impressions are logged automatically when the iframe loads — no extra tracking code required.',
-              },
-            ].map(({ label, body }) => (
+            {([
+              ['Marketer-owned content', <>Marketers update carousel slides without code deploys. They create Banner campaigns in Braze, target them to placement IDs, and control content, scheduling, and audience — no engineering ticket required.</>],
+              ['Per-slide targeting and A/B testing', <>Each slide can show different content to different users based on Braze audience segments. Control groups are handled automatically by the SDK — no extra logic needed.</>],
+              ['Impressions tracked automatically', <><code className="rounded bg-muted px-1.5 py-0.5 font-medium">insertBanner()</code> logs an impression as soon as the Banner iframe loads. There&apos;s no analytics plumbing to wire up — Braze handles it the moment content becomes visible.</>],
+              ['Bring your own carousel', <>Braze fills the containers; the carousel UI is entirely yours. Use React state and CSS transitions as this demo does, or drop in Embla, Swiper, or Splide — any approach works.</>],
+            ] as [string, React.ReactNode][]).map(([label, body]) => (
               <div key={label} className="rounded-lg border border-border bg-card p-5">
                 <p className="mb-1.5 font-semibold text-foreground">{label}</p>
                 <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
@@ -164,56 +188,180 @@ export default function Page() {
         {/* ── Integration guide ───────────────────────────────────────────── */}
         <section className="py-14">
           <p className="mb-1 text-xs font-bold uppercase tracking-widest text-primary">Step-by-step</p>
-          <h2 className="mb-2 text-2xl font-bold tracking-tight text-foreground">Add it to your project</h2>
+          <h2 className="mb-2 text-2xl font-bold tracking-tight text-foreground">Add a Banners carousel to your project</h2>
           <p className="mb-10 max-w-[600px] text-muted-foreground">
-            Four steps from zero to a working Braze-powered carousel.
+            Seven steps from zero to a working Braze-powered carousel.
           </p>
 
           <div className="flex flex-col gap-10">
-            <Step n={1} title="Create Banner placements in Braze">
-              <p>
-                In the Braze dashboard, navigate to <strong>Settings → Banner Placements</strong> and
-                create one placement per carousel slot. Each placement ID maps to one slide —
-                marketers design the HTML content in the Braze composer.
-              </p>
-              <CodeBlock code={step1Code} language="bash" />
+            <Step n={1} title="Initialize the SDK">
+              <StepTabs tabs={[
+                {
+                  label: "How it works",
+                  content: (
+                    <div className="flex flex-col gap-3 text-sm leading-relaxed text-muted-foreground">
+                      <p>
+                        The SDK must be initialized once before any Braze features can be used.{" "}
+                        <code className="rounded bg-muted px-1.5 py-0.5 font-medium">initialize()</code> connects
+                        to Braze servers using your API key and endpoint.
+                      </p>
+                      <p>
+                        Set <code className="rounded bg-muted px-1.5 py-0.5 font-medium">enableLogging: true</code> while
+                        developing — it surfaces what the SDK is doing in the browser console.
+                        Set <code className="rounded bg-muted px-1.5 py-0.5 font-medium">allowUserSuppliedJavascript: true</code> so
+                        Banner HTML can execute inside the iframe. Then call{" "}
+                        <code className="rounded bg-muted px-1.5 py-0.5 font-medium">openSession()</code> to
+                        start tracking the user session.
+                      </p>
+                    </div>
+                  ),
+                },
+                { label: "Sample code", content: <CodeBlock code={step1Code} language="javascript" /> },
+              ]} />
             </Step>
 
-            <Step n={2} title="Install the SDK">
-              <p>
-                Add <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-medium">@braze/web-sdk</code> and
-                configure your API key and SDK endpoint
-                in <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-medium">.env.local</code>.
-              </p>
-              <CodeBlock code={step2Code} language="bash" />
+            <Step n={2} title="Subscribe to Banner updates">
+              <StepTabs tabs={[
+                {
+                  label: "How it works",
+                  content: (
+                    <div className="flex flex-col gap-3 text-sm leading-relaxed text-muted-foreground">
+                      <p>
+                        <code className="rounded bg-muted px-1.5 py-0.5 font-medium">subscribeToBannersUpdates()</code> registers
+                        a callback that fires whenever Braze delivers new Banner content. The callback
+                        receives an object mapping each placement ID to its{" "}
+                        <code className="rounded bg-muted px-1.5 py-0.5 font-medium">Banner</code> — or{" "}
+                        <code className="rounded bg-muted px-1.5 py-0.5 font-medium">null</code> if the
+                        user didn&apos;t qualify for any campaign at that placement.
+                      </p>
+                      <p>
+                        Store the result in state so your UI re-renders automatically when content arrives.
+                      </p>
+                    </div>
+                  ),
+                },
+                { label: "Sample code", content: <CodeBlock code={step2Code} language="javascript" /> },
+              ]} />
             </Step>
 
-            <Step n={3} title="Build the carousel">
-              <p>
-                The repo includes a <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-medium">BrazeProvider</code> that
-                initializes the SDK and exposes banner data via React context — wrap your app
-                with it in <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-medium">layout.tsx</code>.
-                Then build the carousel component. For the active slide,
-                it calls <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-medium">insertBanner()</code> to
-                render the HTML into an iframe. Inactive slides stay hidden until navigated to.
-              </p>
-              <CodeBlock code={step3Code} language="typescript" />
-              <p>
-                Drop <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-medium">&lt;BannerCarousel /&gt;</code> anywhere
-                on the page — it reads from context automatically, no props needed.
-              </p>
-              <CodeBlock code={step3RenderCode} language="typescript" />
+            <Step n={3} title="Insert Banners and handle control groups">
+              <StepTabs tabs={[
+                {
+                  label: "How it works",
+                  content: (
+                    <div className="flex flex-col gap-3 text-sm leading-relaxed text-muted-foreground">
+                      <p>
+                        <code className="rounded bg-muted px-1.5 py-0.5 font-medium">insertBanner()</code> renders
+                        the Banner&apos;s HTML into an isolated iframe inside the container element you
+                        provide. Impressions are logged automatically when the iframe loads — no
+                        extra analytics code needed.
+                      </p>
+                      <p>
+                        Control groups are part of Braze&apos;s A/B testing system. When{" "}
+                        <code className="rounded bg-muted px-1.5 py-0.5 font-medium">banner.isControl</code> is{" "}
+                        <code className="rounded bg-muted px-1.5 py-0.5 font-medium">true</code>, the user
+                        is in a holdout group and shouldn&apos;t see content. Hide or collapse the
+                        container for these users to keep experiment results valid.
+                      </p>
+                    </div>
+                  ),
+                },
+                { label: "Sample code", content: <CodeBlock code={step3Code} language="javascript" /> },
+              ]} />
             </Step>
 
-            <Step n={4} title="Analytics and refresh">
-              <p>
-                Impression and click tracking is handled automatically
-                by <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-medium">insertBanner()</code> —
-                no extra tracking code required. To keep carousel content fresh,
-                call <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-medium">requestBannersRefresh()</code> on
-                page navigation.
-              </p>
-              <CodeBlock code={step4Code} language="typescript" />
+            <Step n={4} title="Refresh your Banners">
+              <StepTabs tabs={[
+                {
+                  label: "How it works",
+                  content: (
+                    <div className="flex flex-col gap-3 text-sm leading-relaxed text-muted-foreground">
+                      <p>
+                        <code className="rounded bg-muted px-1.5 py-0.5 font-medium">requestBannersRefresh()</code> tells
+                        Braze to fetch the latest Banner content for the given placement IDs. Call it
+                        once after initializing the SDK so the user gets fresh content at the start
+                        of each session.
+                      </p>
+                      <p>
+                        You can also call it at any time — for example, on page navigation — to
+                        ensure content stays current without a full page reload.
+                      </p>
+                    </div>
+                  ),
+                },
+                { label: "Sample code", content: <CodeBlock code={step4Code} language="javascript" /> },
+              ]} />
+            </Step>
+
+            <Step n={5} title="Add containers for your Banners">
+              <StepTabs tabs={[
+                {
+                  label: "How it works",
+                  content: (
+                    <div className="flex flex-col gap-3 text-sm leading-relaxed text-muted-foreground">
+                      <p>
+                        <code className="rounded bg-muted px-1.5 py-0.5 font-medium">insertBanner()</code> renders
+                        content into a DOM element you provide — one per placement. In plain HTML,
+                        that&apos;s a <code className="rounded bg-muted px-1.5 py-0.5 font-medium">&lt;div&gt;</code> with
+                        an <code className="rounded bg-muted px-1.5 py-0.5 font-medium">id</code> you
+                        can look up with{" "}
+                        <code className="rounded bg-muted px-1.5 py-0.5 font-medium">document.getElementById()</code>.
+                        In a React component, you attach refs directly to JSX elements instead —
+                        step 6 shows how.
+                      </p>
+                    </div>
+                  ),
+                },
+                { label: "Sample code", content: <CodeBlock code={step5Code} language="html" /> },
+              ]} />
+            </Step>
+
+            <Step n={6} title="Build the carousel UI">
+              <StepTabs tabs={[
+                {
+                  label: "How it works",
+                  content: (
+                    <div className="flex flex-col gap-3 text-sm leading-relaxed text-muted-foreground">
+                      <p>
+                        The carousel is standard UI wired to the Braze data you already have. Track
+                        the active slide index with component state, then call{" "}
+                        <code className="rounded bg-muted px-1.5 py-0.5 font-medium">braze.insertBanner()</code>{" "}
+                        on the newly visible container whenever the slide changes.
+                      </p>
+                      <p>
+                        Each slot container maps to one placement ID — show the active container and
+                        hide the rest. Previous/next buttons and dot indicators update the active
+                        index; Braze handles everything else. You can use any carousel library or
+                        build your own.
+                      </p>
+                      <p>
+                        Because <code className="rounded bg-muted px-1.5 py-0.5 font-medium">insertBanner()</code> is
+                        idempotent, you can safely call it again whenever slide state or banner data
+                        changes without rendering duplicate iframes.
+                      </p>
+                    </div>
+                  ),
+                },
+                { label: "Sample code", content: <CodeBlock code={step6Code} language="typescript" /> },
+              ]} />
+            </Step>
+
+            <Step n={7} title="Render the carousel">
+              <StepTabs tabs={[
+                {
+                  label: "How it works",
+                  content: (
+                    <div className="flex flex-col gap-3 text-sm leading-relaxed text-muted-foreground">
+                      <p>
+                        The <code className="rounded bg-muted px-1.5 py-0.5 font-medium">BannerCarousel</code> component
+                        is self-contained — it manages its own Braze subscription and refresh internally.
+                        Import it and drop it anywhere in your component tree.
+                      </p>
+                    </div>
+                  ),
+                },
+                { label: "Sample code", content: <CodeBlock code={step7Code} language="typescript" /> },
+              ]} />
             </Step>
           </div>
         </section>
