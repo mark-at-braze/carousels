@@ -8,7 +8,6 @@ export const CAROUSEL_PLACEMENT_IDS = [
   "carousel_slot_1",
   "carousel_slot_2",
   "carousel_slot_3",
-  "carousel_slot_4",
 ];
 
 interface BrazeContextValue {

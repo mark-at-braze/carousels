@@ -37,7 +37,6 @@ const step4Code = `braze.requestBannersRefresh([
   "carousel_slot_1",
   "carousel_slot_2",
   "carousel_slot_3",
-  "carousel_slot_4",
 ]);`
 
 const step7Code = `import { BannerCarousel } from "./BannerCarousel";
@@ -49,8 +48,7 @@ export default function Page() {
 const step5Code = `<!-- One <div> per carousel slot -->
 <div id="carousel-slot-1" style="width: 100%; height: 256px;"></div>
 <div id="carousel-slot-2" style="width: 100%; height: 256px;"></div>
-<div id="carousel-slot-3" style="width: 100%; height: 256px;"></div>
-<div id="carousel-slot-4" style="width: 100%; height: 256px;"></div>`
+<div id="carousel-slot-3" style="width: 100%; height: 256px;"></div>`
 
 const step6Code = `"use client";
 
@@ -61,7 +59,6 @@ const PLACEMENT_IDS = [
   "carousel_slot_1",
   "carousel_slot_2",
   "carousel_slot_3",
-  "carousel_slot_4",
 ];
 
 export function BannerCarousel() {
@@ -162,10 +159,10 @@ export default function Page() {
 
         {/* ── Architecture ───────────────────────────────────────────────── */}
         <section className="py-14">
-          <p className="mb-1 text-xs font-bold uppercase tracking-widest text-primary">Architecture</p>
+          <p className="mb-1 text-xs font-bold uppercase tracking-widest text-primary">Overview</p>
           <h2 className="mb-2 text-2xl font-bold tracking-tight text-foreground">How it works</h2>
-          <p className="mb-8 max-w-[600px] text-muted-foreground">
-            Four Banner placements feed four carousel slides. The SDK delivers
+          <p className="mb-8 text-muted-foreground">
+            Three Banner placements feed three carousel slides. The SDK delivers
             each placement&apos;s HTML, and React renders it — no carousel content
             lives in your codebase.
           </p>

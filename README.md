@@ -4,12 +4,12 @@ A working reference implementation and developer guide for building a content ca
 
 The demo page serves two purposes:
 
-1. **Live carousel** — a working carousel driven by four Banner placements, so you can see the integration in action with real Braze content.
+1. **Live carousel** — a working carousel driven by three Banner placements, so you can see the integration in action with real Braze content.
 2. **Step-by-step integration guide** — a seven-step walkthrough structured around the core Braze SDK functions (`initialize`, `subscribeToBannersUpdates`, `insertBanner`, `requestBannersRefresh`), with a "How it works" and "Sample code" tab for each step, and links to the relevant files in this repo.
 
 ## How it works
 
-Each carousel slide maps to its own Banner placement ID (`carousel_slot_1` through `carousel_slot_4`). The Braze SDK fetches each placement's HTML content and `insertBanner()` renders it into an isolated iframe with automatic impression tracking. Marketers get independent control over every slide's content, targeting, and scheduling — all without a code deploy.
+Each carousel slide maps to its own Banner placement ID (`carousel_slot_1` through `carousel_slot_3`). The Braze SDK fetches each placement's HTML content and `insertBanner()` renders it into an isolated iframe with automatic impression tracking. Marketers get independent control over every slide's content, targeting, and scheduling — all without a code deploy.
 
 ### SDK call sequence
 
@@ -52,12 +52,11 @@ Your API key and SDK endpoint are in the Braze dashboard under **Settings → AP
 
 ### 3. Create Banner placements in Braze
 
-In the Braze dashboard, go to **Settings → Banner Placements** and create four placements with these exact IDs:
+In the Braze dashboard, go to **Settings → Banner Placements** and create three placements with these exact IDs:
 
 - `carousel_slot_1`
 - `carousel_slot_2`
 - `carousel_slot_3`
-- `carousel_slot_4`
 
 Then create a Banners campaign for each placement in the Braze composer. The SDK delivers the HTML verbatim; `insertBanner()` renders it in an isolated iframe.
 
@@ -103,7 +102,7 @@ Initializes the Braze SDK once with `allowUserSuppliedJavascript: true` (require
 
 ### `lib/braze/provider.tsx`
 
-Client component that initializes the SDK on mount, subscribes to `subscribeToBannersUpdates` for the four placement IDs, calls `requestBannersRefresh`, and exposes the banner map via React context (`BrazeContext`). Cleans up the subscription on unmount. Also exports `CAROUSEL_PLACEMENT_IDS` and the `useBrazeContext` hook.
+Client component that initializes the SDK on mount, subscribes to `subscribeToBannersUpdates` for the three placement IDs, calls `requestBannersRefresh`, and exposes the banner map via React context (`BrazeContext`). Cleans up the subscription on unmount. Also exports `CAROUSEL_PLACEMENT_IDS` and the `useBrazeContext` hook.
 
 ### `lib/braze/carousel.tsx`
 
