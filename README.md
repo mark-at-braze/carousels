@@ -7,6 +7,8 @@ The demo page serves two purposes:
 1. **Live carousel** — a working carousel driven by three Banner placements, so you can see the integration in action with real Braze content.
 2. **Step-by-step integration guide** — a seven-step walkthrough structured around the core Braze SDK functions (`initialize`, `subscribeToBannersUpdates`, `insertBanner`, `requestBannersRefresh`), with a "How it works" and "Sample code" tab for each step, and links to the relevant files in this repo.
 
+![Carousel demo](public/demo.gif)
+
 ## How it works
 
 Each carousel slide maps to its own Banner placement ID (`carousel_slot_1` through `carousel_slot_3`). The Braze SDK fetches each placement's HTML content and `insertBanner()` renders it into an isolated iframe with automatic impression tracking. Marketers get independent control over every slide's content, targeting, and scheduling — all without a code deploy.
