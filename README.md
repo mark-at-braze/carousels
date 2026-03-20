@@ -116,7 +116,7 @@ The main page. Renders the live `BannerCarousel` demo, the four architecture til
 
 ### `app/layout.tsx`
 
-Root layout using the Inter font. Wraps the app with `BrazeProvider` so banner data is available to all components, and includes [Vercel Analytics](https://vercel.com/analytics).
+Root layout using the Inter font. Wraps the app with `BrazeProvider` so banner data is available to all components.
 
 ### `components/step-tabs.tsx`
 
@@ -130,8 +130,6 @@ Lightweight client component that renders a Stripe-style tab bar. Used by the in
 - [Tailwind CSS](https://tailwindcss.com) 4
 - [TypeScript](https://www.typescriptlang.org) 5.7.3
 - [lucide-react](https://lucide.dev) — chevron icons for carousel navigation
-- [@vercel/analytics](https://vercel.com/analytics) — page view analytics
-
 ## License
 
 MIT
