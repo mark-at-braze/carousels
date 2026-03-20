@@ -122,7 +122,7 @@ export default function Page() {
               Docs
             </a>
             <a
-              href="https://github.com/braze-inc/banners-carousel-demo"
+              href="https://github.com/mark-at-braze/carousels"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -385,9 +385,9 @@ export default function Page() {
               Banners Docs
             </a>
             <a href="https://www.braze.com/docs/developer_guide/banners/placements" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-foreground">
-              Placements Guide
+              Developer Guide
             </a>
-            <a href="https://github.com/braze-inc/banners-carousel-demo" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-foreground">
+            <a href="https://github.com/mark-at-braze/carousels" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-foreground">
               Source on GitHub
             </a>
           </div>
