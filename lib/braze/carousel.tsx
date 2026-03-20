@@ -111,7 +111,7 @@ export function BannerCarousel() {
         })}
         <div
           ref={swipeOverlayRef}
-          className="absolute inset-0 z-10"
+          className="swipe-overlay absolute inset-0 z-10"
           style={{ touchAction: 'pan-y' }}
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}

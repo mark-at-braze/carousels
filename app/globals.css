@@ -102,3 +102,17 @@
   width: 2px;
   background: linear-gradient(to bottom, oklch(0.42 0.264 274), oklch(0.92 0.005 274));
 }
+
+/* ─── Carousel swipe overlay ──────────────────────────────────────────────── */
+/* Invisible by default so desktop mouse clicks pass through to the iframe.   */
+/* Enabled only on coarse-pointer (touch) devices for swipe detection.        */
+
+.swipe-overlay {
+  pointer-events: none;
+}
+
+@media (pointer: coarse) {
+  .swipe-overlay {
+    pointer-events: auto;
+  }
+}
