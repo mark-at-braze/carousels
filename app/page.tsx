@@ -25,12 +25,15 @@ const step2Code = `braze.subscribeToBannersUpdates((banners) => {
 const step3Code = `const banner = banners["carousel_slot_1"];
 const container = document.getElementById("carousel-slot-1");
 
-if (banner && !banner.isControl && container) {
+if (banner && container) {
   // Renders the Banner HTML into an iframe and auto-logs an impression.
   braze.insertBanner(banner, container);
-} else if (banner?.isControl) {
-  // Hide the container for control-group users.
-  container.style.display = "none";
+
+  // Special handling if the user is part of a Control Variant
+  if (banner.isControl) {
+    // hide or collapse the container
+    container.style.display = "none";
+  }
 }`
 
 const step4Code = `braze.requestBannersRefresh([
@@ -75,8 +78,11 @@ export function BannerCarousel() {
   useEffect(() => {
     const banner = banners[PLACEMENT_IDS[currentSlide]];
     const container = slotRefs.current[currentSlide];
-    if (banner && !banner.isControl && container) {
+    if (banner && container) {
       braze.insertBanner(banner, container);
+      if (banner.isControl) {
+        container.style.display = "none";
+      }
     }
   }, [currentSlide, banners]);
 
@@ -261,8 +267,10 @@ export default function Page() {
                         Control groups are part of Braze&apos;s A/B testing system. When{" "}
                         <code className="rounded bg-muted px-1.5 py-0.5 font-medium">banner.isControl</code> is{" "}
                         <code className="rounded bg-muted px-1.5 py-0.5 font-medium">true</code>, the user
-                        is in a holdout group and shouldn&apos;t see content. Hide or collapse the
-                        container for these users to keep experiment results valid.
+                        is in a holdout group and shouldn&apos;t see content. Always call{" "}
+                        <code className="rounded bg-muted px-1.5 py-0.5 font-medium">insertBanner()</code> first
+                        — even for control users — so the impression is tracked. Then hide or collapse
+                        the container to keep experiment results valid.
                       </p>
                       <ProjectLink file="lib/braze/carousel.tsx" />
                     </div>

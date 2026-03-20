@@ -20,9 +20,12 @@ export function BannerCarousel() {
     const banner = banners[placementId]
     const container = slotRefs.current[currentSlide]
 
-    if (banner && !banner.isControl && container && !insertedSlots.current.has(currentSlide)) {
+    if (banner && container && !insertedSlots.current.has(currentSlide)) {
       braze.insertBanner(banner, container)
       insertedSlots.current.add(currentSlide)
+      if (banner.isControl) {
+        container.style.display = 'none'
+      }
     }
   }, [currentSlide, banners])
 
@@ -93,7 +96,7 @@ export function BannerCarousel() {
                     : 'translate-x-full opacity-0'
               )}
             >
-              {banner === null || banner?.isControl ? (
+              {banner === null ? (
                 <div className="flex h-full items-center justify-center bg-muted/30">
                   <p className="text-sm text-muted-foreground">
                     No banner configured for <code>{placementId}</code>
