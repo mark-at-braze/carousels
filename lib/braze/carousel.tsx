@@ -38,9 +38,29 @@ export function BannerCarousel() {
 
   const goToSlide = (index: number) => setCurrentSlide(index)
 
+  const touchStartX = useRef<number | null>(null)
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+  }
+
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return
+    const delta = touchStartX.current - e.changedTouches[0].clientX
+    if (Math.abs(delta) > 40) {
+      delta > 0 ? nextSlide() : prevSlide()
+    }
+    touchStartX.current = null
+  }
+
   return (
     <div className="relative w-full overflow-hidden rounded-lg border border-border shadow-sm">
-      <div className="relative" style={{ height: BANNER_HEIGHT_PX }}>
+      <div
+        className="relative"
+        style={{ height: BANNER_HEIGHT_PX }}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
         {!hasAnyBanner && (
           <div className="flex h-full items-center justify-center bg-muted/30">
             <p className="text-muted-foreground">Loading banner content…</p>
