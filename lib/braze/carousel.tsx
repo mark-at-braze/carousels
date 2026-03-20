@@ -39,18 +39,32 @@ export function BannerCarousel() {
   const goToSlide = (index: number) => setCurrentSlide(index)
 
   const touchStartX = useRef<number | null>(null)
+  const touchStartY = useRef<number | null>(null)
+  const swipeOverlayRef = useRef<HTMLDivElement>(null)
 
   const onTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
   }
 
   const onTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return
-    const delta = touchStartX.current - e.changedTouches[0].clientX
-    if (Math.abs(delta) > 40) {
-      delta > 0 ? nextSlide() : prevSlide()
+    if (touchStartX.current === null || touchStartY.current === null) return
+    const deltaX = touchStartX.current - e.changedTouches[0].clientX
+    const deltaY = Math.abs(touchStartY.current - e.changedTouches[0].clientY)
+
+    if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > deltaY) {
+      deltaX > 0 ? nextSlide() : prevSlide()
+    } else if (Math.abs(deltaX) < 15 && deltaY < 15) {
+      // Tap: step aside so the browser's synthetic click reaches the iframe
+      if (swipeOverlayRef.current) {
+        swipeOverlayRef.current.style.pointerEvents = 'none'
+        setTimeout(() => {
+          if (swipeOverlayRef.current) swipeOverlayRef.current.style.pointerEvents = 'auto'
+        }, 500)
+      }
     }
     touchStartX.current = null
+    touchStartY.current = null
   }
 
   return (
@@ -58,8 +72,6 @@ export function BannerCarousel() {
       <div
         className="relative"
         style={{ height: BANNER_HEIGHT_PX }}
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
       >
         {!hasAnyBanner && (
           <div className="flex h-full items-center justify-center bg-muted/30">
@@ -97,6 +109,13 @@ export function BannerCarousel() {
             </div>
           )
         })}
+        <div
+          ref={swipeOverlayRef}
+          className="absolute inset-0 z-10"
+          style={{ touchAction: 'pan-y' }}
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
+        />
       </div>
 
       <button
