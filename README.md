@@ -48,7 +48,7 @@ NEXT_PUBLIC_BRAZE_API_KEY=your-api-key-here
 NEXT_PUBLIC_BRAZE_SDK_ENDPOINT=your-sdk-endpoint.braze.com
 ```
 
-Your API key and SDK endpoint are in the Braze dashboard under **Settings → APIs and Identifiers**.
+Your API key and SDK endpoint are in the Braze dashboard under **Settings → App Settings**.
 
 > `.env.local` is gitignored — never commit credentials.
 
